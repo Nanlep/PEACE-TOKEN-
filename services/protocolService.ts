@@ -18,6 +18,7 @@ export const ProtocolService = {
 
   /**
    * PT -> USDC Exchange with slippage and LP fee calculation.
+   * Fixed to 0.1% as per White-paper Section 3.
    */
   calculateSwap(amountPT: number, currentPrice: number) {
     const feeRate = 0.001; // 0.1% protocol fee
@@ -25,7 +26,7 @@ export const ProtocolService = {
     const netPT = amountPT - fee;
     const usdcValue = netPT * currentPrice;
     
-    // Dynamic slippage: 0.05% per 1M tokens swapped
+    // Dynamic slippage: 0.05% per 1M tokens swapped to prevent flash crashes
     const slippage = Math.min(0.05, (amountPT / 1000000) * 0.005); 
     const finalUSDC = usdcValue * (1 - slippage);
 
@@ -58,9 +59,10 @@ export const ProtocolService = {
 
   /**
    * Mission-Critical Solvency Verification
+   * Ensures 5% reserve floor is never breached during liquidation.
    */
   verifySolvency(requestedUSDC: number, currentTreasury: number): boolean {
-    const reserveFloor = 0.05; // 5% minimum reserve requirement
+    const reserveFloor = 0.05; 
     const liquidBuffer = currentTreasury * (1 - reserveFloor);
     return requestedUSDC <= liquidBuffer;
   },

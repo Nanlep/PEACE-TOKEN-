@@ -19,7 +19,7 @@ const PayoutLedger: React.FC<PayoutLedgerProps> = ({ projects, onPayout, onVote,
     <div className="glass-panel p-6 rounded-2xl border border-white/10">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h2 className="text-lg font-bold text-white">Validation & Payout Ledger</h2>
+          <h2 className="text-lg font-bold text-white uppercase tracking-tight">Validation & Payout Ledger</h2>
           <p className="text-[10px] text-slate-500 uppercase tracking-widest mt-1">Multi-Layer Consensus Enforcement</p>
         </div>
         <div className="text-[10px] font-mono text-blue-400 bg-blue-400/5 border border-blue-500/10 px-2 py-1 rounded flex items-center gap-2">
@@ -47,7 +47,7 @@ const PayoutLedger: React.FC<PayoutLedgerProps> = ({ projects, onPayout, onVote,
             ) : projects.map((p) => (
               <tr key={p.id} className="text-xs group">
                 <td className="py-4 pr-4">
-                  <div className="font-bold text-white mb-0.5 truncate max-w-[150px]">{p.title}</div>
+                  <div className="font-bold text-white mb-0.5 truncate max-w-[150px] uppercase tracking-wide">{p.title}</div>
                   <div className="flex flex-wrap gap-1 mt-1">
                     {p.evidenceUrls.map((url, i) => (
                       <span key={i} className="text-[8px] bg-white/5 text-slate-500 border border-white/10 px-1 py-0.5 rounded flex items-center gap-1 hover:text-blue-400 transition-colors cursor-help">
@@ -82,8 +82,8 @@ const PayoutLedger: React.FC<PayoutLedgerProps> = ({ projects, onPayout, onVote,
                    </div>
                 </td>
                 <td className="py-4 text-right">
-                  <div className="text-white font-bold">{p.tokensRewarded} PT</div>
-                  <div className="text-slate-500 font-mono scale-90 origin-right">${(p.tokensRewarded * ptPrice).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDC</div>
+                  <div className="text-white font-bold">{p.tokensRewarded.toLocaleString()} PT</div>
+                  <div className="text-slate-500 font-mono scale-90 origin-right">${(p.tokensRewarded * ptPrice).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
                 </td>
                 <td className="py-4 text-right">
                   <div className="flex justify-end gap-2">
@@ -108,9 +108,9 @@ const PayoutLedger: React.FC<PayoutLedgerProps> = ({ projects, onPayout, onVote,
                     {p.status === 'VALIDATED' && (
                       <button 
                         onClick={() => onPayout(p.id)}
-                        className="bg-blue-600 hover:bg-blue-500 text-white px-3 py-1 rounded font-bold text-[10px] uppercase transition-all shadow-md shadow-blue-900/20"
+                        className="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-1.5 rounded-lg font-black text-[9px] uppercase tracking-widest transition-all shadow-lg shadow-emerald-900/40 animate-pulse"
                       >
-                        Disburse
+                        Claim Payout
                       </button>
                     )}
                     {p.status === 'PAID' && (
