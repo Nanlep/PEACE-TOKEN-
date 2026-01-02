@@ -1,0 +1,7 @@
+{
+  "name": "Peace-Token Protocol",
+  "description": "A production-grade, mission-critical platform for verified peace-building efforts, decentralized governance, and reputation-based rewards.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}

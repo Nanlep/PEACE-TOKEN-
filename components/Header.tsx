@@ -1,0 +1,64 @@
+
+import React from 'react';
+import { Icons } from '../constants';
+
+interface HeaderProps {
+  balancePT: number;
+  balanceUSDC: number;
+  walletAddress: string | null;
+  onConnect: () => void;
+}
+
+const Header: React.FC<HeaderProps> = ({ balancePT, balanceUSDC, walletAddress, onConnect }) => {
+  return (
+    <header className="border-b border-white/10 bg-[#0a0a0c]/80 backdrop-blur-md sticky top-0 z-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="bg-blue-600 p-2 rounded-lg shadow-lg shadow-blue-900/20">
+            <Icons.Shield />
+          </div>
+          <div>
+            <h1 className="text-xl font-bold tracking-tight text-white">PEACE-TOKEN <span className="text-blue-500 font-mono text-sm font-normal">v4.2.0-PROD</span></h1>
+            <p className="text-[10px] text-slate-500 mono uppercase tracking-widest">Mainnet Enterprise</p>
+          </div>
+        </div>
+
+        <div className="hidden lg:flex items-center gap-6">
+          <div className="flex items-center gap-2 px-3 py-1 bg-white/5 rounded-full border border-white/10">
+            <div className="status-pulse"></div>
+            <span className="text-xs font-medium text-emerald-400 font-mono uppercase tracking-tighter">Chain: Verified</span>
+          </div>
+          <div className="flex items-center gap-4">
+            <div className="flex flex-col items-end">
+              <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Global Portfolio</span>
+              <div className="flex gap-4">
+                <span className="text-xs font-bold text-white mono">{balancePT.toLocaleString(undefined, { minimumFractionDigits: 2 })} PT</span>
+                <span className="text-xs font-bold text-emerald-400 mono">${balanceUSDC.toLocaleString(undefined, { minimumFractionDigits: 2 })} USDC</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-4">
+          {walletAddress ? (
+            <div className="flex flex-col items-end">
+               <span className="text-[8px] text-slate-500 uppercase font-black mb-0.5 tracking-widest">Active Session</span>
+               <button className="px-3 py-1.5 bg-slate-800/50 text-blue-400 rounded-md text-[10px] font-mono border border-blue-500/20">
+                {walletAddress.slice(0, 6)}...{walletAddress.slice(-4)}
+              </button>
+            </div>
+          ) : (
+            <button 
+              onClick={onConnect}
+              className="px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-md text-[10px] font-black uppercase tracking-[0.2em] transition-all shadow-lg shadow-blue-900/40 active:scale-95"
+            >
+              Connect Node
+            </button>
+          )}
+        </div>
+      </div>
+    </header>
+  );
+};
+
+export default Header;
