@@ -116,6 +116,11 @@ const App: React.FC = () => {
     addLog('STAKE', 0, 'PT', 'Persistent Session Initialized');
   };
 
+  const handleDisconnect = () => {
+    setWalletAddress(null);
+    addLog('STAKE', 0, 'PT', 'Session Terminated by User');
+  };
+
   const handleProjectValidated = (newProject: PeaceProject) => {
     if (isPaused || !walletAddress) return;
     const finalTokens = ProtocolService.calculateReward(newProject.tokensRewarded, currentTier, newProject.impactScore);
@@ -182,7 +187,8 @@ const App: React.FC = () => {
     <div className="min-h-screen flex flex-col bg-[#0a0a0c] text-slate-200">
       <Header 
         balancePT={balancePT} balanceUSDC={balanceUSDC} walletAddress={walletAddress}
-        onConnect={handleConnect} onOpenExchange={() => setIsExchangeOpen(true)}
+        onConnect={handleConnect} onDisconnect={handleDisconnect}
+        onOpenExchange={() => setIsExchangeOpen(true)}
         onOpenBridge={() => setIsFundingOpen(true)}
         isEligible={currentTier !== IdentityTier.UNVERIFIED}
       />

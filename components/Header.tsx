@@ -7,6 +7,7 @@ interface HeaderProps {
   balanceUSDC: number;
   walletAddress: string | null;
   onConnect: () => void;
+  onDisconnect: () => void;
   onOpenExchange: () => void;
   onOpenBridge: () => void;
   isEligible: boolean;
@@ -17,6 +18,7 @@ const Header: React.FC<HeaderProps> = ({
   balanceUSDC, 
   walletAddress, 
   onConnect, 
+  onDisconnect,
   onOpenExchange, 
   onOpenBridge,
   isEligible 
@@ -61,11 +63,22 @@ const Header: React.FC<HeaderProps> = ({
 
         <div className="flex items-center gap-4">
           {walletAddress ? (
-            <div className="flex flex-col items-end">
-               <span className="text-[8px] text-slate-500 uppercase font-black mb-0.5 tracking-widest">Active Session</span>
-               <button className="px-3 py-1.5 bg-slate-800/50 text-blue-400 rounded-md text-[10px] font-mono border border-blue-500/20">
-                {walletAddress.slice(0, 6)}...{walletAddress.slice(-4)}
-              </button>
+            <div className="flex items-center gap-3">
+              <div className="flex flex-col items-end">
+                 <span className="text-[8px] text-slate-500 uppercase font-black mb-0.5 tracking-widest">Active Session</span>
+                 <div className="flex items-center gap-2">
+                    <div className="px-3 py-1.5 bg-slate-800/50 text-blue-400 rounded-md text-[10px] font-mono border border-blue-500/20">
+                      {walletAddress.slice(0, 6)}...{walletAddress.slice(-4)}
+                    </div>
+                    <button 
+                      onClick={onDisconnect}
+                      className="text-[9px] font-black uppercase text-rose-500 hover:text-rose-400 tracking-widest transition-colors px-2 py-1"
+                      title="Terminate Node Session"
+                    >
+                      Terminate
+                    </button>
+                 </div>
+              </div>
             </div>
           ) : (
             <button 
