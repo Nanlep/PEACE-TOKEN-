@@ -13,8 +13,11 @@ export interface PeaceProject {
   author: string;
   tier: IdentityTier;
   impactScore: number;
-  status: 'PENDING' | 'VALIDATED' | 'REJECTED' | 'PAID';
+  status: 'PENDING' | 'VOTING' | 'VALIDATED' | 'REJECTED' | 'PAID';
   evidenceHash: string;
+  evidenceUrls: string[]; // Added for deep dive verification
+  votesFor: number; // Community validation quota
+  votesAgainst: number;
   timestamp: number;
   tokensRewarded: number;
   usdcValue: number;

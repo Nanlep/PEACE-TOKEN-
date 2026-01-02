@@ -117,7 +117,31 @@ const App: React.FC = () => {
     const finalProject = { ...newProject, tokensRewarded: tieredReward, usdcValue: tieredReward * ptPrice };
     
     setProjects(prev => [finalProject, ...prev]);
-    addLog('MINT', tieredReward, 'PT');
+    addLog('MINT', 0, 'PT'); // Pre-mint validation event
+  };
+
+  const handleProjectVote = (id: string, side: 'FOR' | 'AGAINST') => {
+    if (isPaused || !walletAddress) return;
+    const VOTE_QUOTA = 5;
+
+    setProjects(prev => prev.map(p => {
+      if (p.id === id && p.status === 'VOTING') {
+        const newVotesFor = side === 'FOR' ? p.votesFor + 1 : p.votesFor;
+        const newVotesAgainst = side === 'AGAINST' ? p.votesAgainst + 1 : p.votesAgainst;
+        
+        // Use PeaceProject['status'] type explicitly to avoid literal type inference errors
+        let newStatus: PeaceProject['status'] = p.status;
+        if (newVotesFor >= VOTE_QUOTA) {
+          newStatus = 'VALIDATED';
+          addLog('VOTE', 0, 'PT'); // Validation complete
+        } else if (newVotesAgainst >= VOTE_QUOTA) {
+          newStatus = 'REJECTED';
+        }
+
+        return { ...p, votesFor: newVotesFor, votesAgainst: newVotesAgainst, status: newStatus };
+      }
+      return p;
+    }));
   };
 
   const handleTierUpgrade = (newTier: IdentityTier) => {
@@ -150,7 +174,7 @@ const App: React.FC = () => {
   const handlePayout = (projectId: string) => {
     if (isPaused || !walletAddress) return;
     setProjects(prev => prev.map(p => {
-      if (p.id === projectId && p.status !== 'PAID') {
+      if (p.id === projectId && p.status === 'VALIDATED') {
         const reward = p.tokensRewarded;
         setBalancePT(bal => bal + reward);
         setTotalRewarded(prev => prev + reward);
@@ -306,7 +330,12 @@ const App: React.FC = () => {
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
               <div className="lg:col-span-8 flex flex-col gap-8">
                 <ProjectSubmission onValidated={handleProjectValidated} userTier={currentTier} />
-                <PayoutLedger projects={projects} onPayout={handlePayout} />
+                <PayoutLedger 
+                  projects={projects} 
+                  onPayout={handlePayout} 
+                  onVote={handleProjectVote}
+                  userTier={currentTier}
+                />
               </div>
 
               <div className="lg:col-span-4 flex flex-col gap-8">

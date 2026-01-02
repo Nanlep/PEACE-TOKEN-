@@ -10,7 +10,12 @@ interface ProjectSubmissionProps {
 
 const ProjectSubmission: React.FC<ProjectSubmissionProps> = ({ onValidated, userTier }) => {
   const [loading, setLoading] = useState(false);
-  const [formData, setFormData] = useState({ title: '', description: '', evidenceHash: '' });
+  const [formData, setFormData] = useState({ 
+    title: '', 
+    description: '', 
+    evidenceHash: '',
+    evidenceLinks: '' // New field for reports, frameworks, etc.
+  });
   const [result, setResult] = useState<ValidationResult | null>(null);
 
   const isTierGated = userTier === IdentityTier.UNVERIFIED;
@@ -23,9 +28,11 @@ const ProjectSubmission: React.FC<ProjectSubmissionProps> = ({ onValidated, user
     setResult(null);
 
     try {
+      // Deep dive verification includes the evidence repository
+      const fullContext = `${formData.description}\n\nEVIDENCE REPOSITORY:\n${formData.evidenceLinks}`;
       const validation = await validatePeaceProject(
         formData.title, 
-        formData.description, 
+        fullContext, 
         formData.evidenceHash
       );
       
@@ -39,8 +46,11 @@ const ProjectSubmission: React.FC<ProjectSubmissionProps> = ({ onValidated, user
           author: '0x71...4F2A',
           tier: userTier,
           impactScore: validation.impactScore,
-          status: 'VALIDATED',
+          status: 'VOTING', // Moves to community voting after AI pre-approval
           evidenceHash: formData.evidenceHash,
+          evidenceUrls: formData.evidenceLinks.split('\n').filter(l => l.trim() !== ''),
+          votesFor: 0,
+          votesAgainst: 0,
           timestamp: Date.now(),
           tokensRewarded: validation.suggestedTokens,
           usdcValue: validation.suggestedTokens
@@ -49,7 +59,7 @@ const ProjectSubmission: React.FC<ProjectSubmissionProps> = ({ onValidated, user
         setTimeout(() => {
           onValidated(newProject);
           setLoading(false);
-          setFormData({ title: '', description: '', evidenceHash: '' });
+          setFormData({ title: '', description: '', evidenceHash: '', evidenceLinks: '' });
         }, 1200);
       } else {
         setLoading(false);
@@ -73,8 +83,8 @@ const ProjectSubmission: React.FC<ProjectSubmissionProps> = ({ onValidated, user
 
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-lg font-bold text-white">Publish Impact Evidence</h2>
-        <div className="flex gap-2">
-           <span className="text-[10px] font-bold text-blue-400 bg-blue-400/10 px-2 py-0.5 rounded border border-blue-400/20">ORACLE: ACTIVE</span>
+        <div className="flex gap-2 text-[10px] font-bold text-blue-400 bg-blue-400/10 px-2 py-0.5 rounded border border-blue-400/20">
+           ORACLE DEEP-DIVE: READY
         </div>
       </div>
       
@@ -98,7 +108,20 @@ const ProjectSubmission: React.FC<ProjectSubmissionProps> = ({ onValidated, user
             value={formData.description}
             onChange={(e) => setFormData({...formData, description: e.target.value})}
             className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-all text-sm placeholder:text-slate-700 resize-none"
-            placeholder="Quantify outcome, actors influenced, and reduction in conflict risk..."
+            placeholder="Describe outcome and reduction in conflict risk..."
+            required
+            disabled={isTierGated}
+          />
+        </div>
+
+        <div>
+          <label className="block text-[9px] font-black text-slate-500 mb-1 uppercase tracking-widest">Evidence Repository (Reports, Frameworks, Images)</label>
+          <textarea 
+            rows={2}
+            value={formData.evidenceLinks}
+            onChange={(e) => setFormData({...formData, evidenceLinks: e.target.value})}
+            className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-400 transition-all text-[11px] font-mono placeholder:text-slate-700 resize-none"
+            placeholder="Links to PDF reports, image hashes, or signed attendance lists (one per line)..."
             required
             disabled={isTierGated}
           />
@@ -111,10 +134,10 @@ const ProjectSubmission: React.FC<ProjectSubmissionProps> = ({ onValidated, user
           {loading ? (
             <>
               <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
-              <span className="text-[10px] tracking-[0.2em] uppercase">Auditing with Oracle...</span>
+              <span className="text-[10px] tracking-[0.2em] uppercase">Deep Dive Audit in Progress...</span>
             </>
           ) : (
-            <span className="text-[10px] tracking-[0.2em] uppercase">MINT EVIDENCE TO LEDGER</span>
+            <span className="text-[10px] tracking-[0.2em] uppercase">Submit for Multi-Layer Verification</span>
           )}
         </button>
       </form>
@@ -123,11 +146,12 @@ const ProjectSubmission: React.FC<ProjectSubmissionProps> = ({ onValidated, user
         <div className={`mt-6 p-4 rounded-xl border animate-in zoom-in-95 duration-300 ${result.isAuthentic ? 'bg-emerald-500/10 border-emerald-500/20' : 'bg-rose-500/10 border-rose-500/20'}`}>
           <div className="flex items-center justify-between mb-2">
             <span className={`text-[9px] font-black uppercase tracking-widest ${result.isAuthentic ? 'text-emerald-400' : 'text-rose-400'}`}>
-              {result.isAuthentic ? 'LEDGER VERIFIED' : 'AUDIT REJECTION'}
+              {result.isAuthentic ? 'PRE-APPROVED BY ORACLE' : 'ORACLE REJECTION'}
             </span>
-            <span className="text-white font-mono font-bold text-xs">IMPACT: {result.impactScore}</span>
+            <span className="text-white font-mono font-bold text-xs">SCORE: {result.impactScore}</span>
           </div>
           <p className="text-[10px] text-slate-400 mb-3 leading-relaxed italic">"{result.justification}"</p>
+          {result.isAuthentic && <p className="text-[9px] text-blue-400 font-bold uppercase">Moving to Community Validation Layer...</p>}
         </div>
       )}
     </div>
