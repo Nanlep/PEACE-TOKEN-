@@ -30,24 +30,14 @@ const Header: React.FC<HeaderProps> = ({ balancePT, balanceUSDC, walletAddress, 
             <div className="status-pulse"></div>
             <span className="text-xs font-medium text-emerald-400 font-mono uppercase tracking-tighter">Live Node Sync</span>
           </div>
-          <div className="flex items-center gap-8">
-            <div className="flex flex-col items-end">
-              <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest mb-0.5">PT Balance</span>
-              <span className="text-xs font-bold text-white mono">{balancePT.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
-            </div>
-            <div className="flex flex-col items-end">
-              <span className="text-[8px] font-black text-emerald-500/60 uppercase tracking-widest mb-0.5">USDC Liquidity</span>
-              <span className="text-xs font-bold text-emerald-400 mono">${balanceUSDC.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
-            </div>
-            {walletAddress && isEligible && (
-              <button 
-                onClick={onOpenExchange}
-                className="px-3 py-1.5 bg-blue-600/10 hover:bg-blue-600/20 text-blue-400 border border-blue-500/20 rounded-md text-[9px] font-black uppercase tracking-widest transition-all"
-              >
-                Exchange Assets
-              </button>
-            )}
-          </div>
+          {walletAddress && isEligible && (
+            <button 
+              onClick={onOpenExchange}
+              className="px-3 py-1.5 bg-blue-600/10 hover:bg-blue-600/20 text-blue-400 border border-blue-500/20 rounded-md text-[9px] font-black uppercase tracking-widest transition-all"
+            >
+              Exchange Assets
+            </button>
+          )}
         </div>
 
         <div className="flex items-center gap-4">
