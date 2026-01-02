@@ -26,11 +26,11 @@ const UserGuideModal: React.FC<UserGuideModalProps> = ({ isOpen, onClose }) => {
             <h3 className="text-white font-bold text-lg mb-4 flex items-center gap-3">
               <span className="text-blue-500 font-mono">01.</span> The Tokenomics
             </h3>
-            <p className="text-sm mb-4">The system launched with a fixed supply of <strong className="text-white">100,000,000 (100M) tokens</strong> valued at <strong className="text-white">$0.19 each</strong> at the start.</p>
+            <p className="text-sm mb-4">The system launched with a fixed supply of <strong className="text-white">1,000,000,000 (1B) tokens</strong> valued at <strong className="text-white">$0.19 each</strong> at the start.</p>
             <ul className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <li className="p-3 bg-white/5 rounded-lg border border-white/5">
                 <span className="block text-[10px] font-black text-blue-400 uppercase mb-1">50% Reward Pool</span>
-                <span className="text-xs">Reserved for verified acts of peace.</span>
+                <span className="text-xs">Reserved (500M) for verified acts of peace.</span>
               </li>
               <li className="p-3 bg-white/5 rounded-lg border border-white/5">
                 <span className="block text-[10px] font-black text-emerald-400 uppercase mb-1">40% DAO Treasury</span>
@@ -73,11 +73,11 @@ const UserGuideModal: React.FC<UserGuideModalProps> = ({ isOpen, onClose }) => {
             </h3>
             <div className="relative border-l-2 border-white/5 ml-4 pl-8 space-y-6">
               {[
-                "Submission: User uploads summary and evidence hash of peace work.",
-                "AI Oracle: Gemini 3 Pro performs a logic audit and assigns an Impact Score.",
-                "Minting: Approved rewards are minted from the 50M pool to the ledger.",
-                "Payout: Tokens are disbursed directly to the user's connected wallet.",
-                "Swap: User exchanges PEACE for USDC digital dollars in the live pool."
+                "Submission: User uploads summary, evidence hash, and full evidence repository links.",
+                "AI Oracle: Gemini 3 Pro performs a deep-dive logic audit and assigns a risk-adjusted Impact Score.",
+                "Community Consensus: Expert actors audit evidence and vote to meet the validation quota (5 Votes).",
+                "Minting: Once quota is met, PT rewards are minted from the 500M pool to the ledger.",
+                "Payout: Validated tokens are disbursed to the wallet; users may swap PT for USDC in the live pool."
               ].map((step, i) => (
                 <div key={i} className="relative">
                   <div className="absolute -left-[41px] top-1 w-4 h-4 rounded-full bg-blue-600 border-4 border-[#0a0a0c]"></div>

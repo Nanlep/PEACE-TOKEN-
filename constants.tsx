@@ -11,14 +11,14 @@ export const COLORS = {
 };
 
 export const TOKENOMICS = {
-  TOTAL_SUPPLY: 100000000,
+  TOTAL_SUPPLY: 1000000000, // Updated to 1 Billion (1B)
   INITIAL_PRICE_USDC: 0.19,
   ALLOCATION: {
-    REWARDS: 0.50, // 50M tokens
-    DAO: 0.40,     // 40M tokens
-    SYSTEM: 0.10,  // 10M tokens
+    REWARDS: 0.50, // 500M tokens
+    DAO: 0.40,     // 400M tokens
+    SYSTEM: 0.10,  // 100M tokens
   },
-  TARGET_MARKET_CAP: 19000000, // 100M * 0.19
+  TARGET_MARKET_CAP: 190000000, // 1B * 0.19 = 190M
 };
 
 export const SYSTEM_CONFIG = {

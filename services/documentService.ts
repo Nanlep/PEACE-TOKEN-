@@ -27,6 +27,7 @@ The PT (Peace-Token) serves as the protocol's primary reward asset.
 - **Minting:** Rewards are minted upon AI-verified impact validation.
 - **Liquidity:** An integrated Automated Market Maker (AMM) pairs PT with USDC, allowing verified actors to extract value based on real-time market liquidity and treasury reserves.
 - **Fees:** A 0.1% protocol fee is levied on all swaps to sustain the Treasury.
+- **Total Supply:** Capped at 1,000,000,000 (1 Billion) PEACE.
 
 ### 4. GOVERNANCE (DAO)
 The protocol is governed by its verified actors. Decisions regarding Treasury disbursements (PIP-Treasury) and protocol upgrades (PIP-Technical) are managed through quadratic-weighted voting, ensuring that power remains with those who provide the most impact, not just the most capital.

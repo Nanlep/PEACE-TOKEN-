@@ -85,7 +85,7 @@ const DashboardStats: React.FC<DashboardStatsProps> = ({ treasury, totalRewarded
         </div>
 
         <div className="glass-panel p-6 rounded-2xl border border-white/10 flex flex-col items-center">
-          <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 w-full text-left">Supply Allocation (100M Cap)</h4>
+          <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 w-full text-left">Supply Allocation (1B Cap)</h4>
           <ResponsiveContainer width="100%" height={200}>
             <PieChart>
               <Pie

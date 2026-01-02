@@ -23,8 +23,8 @@ const App: React.FC = () => {
   const [isPaused, setIsPaused] = useState(false);
   const [isDiscordLinked, setIsDiscordLinked] = useState(false);
   
-  // Adjusted for 100M @ $0.19 Target
-  const [treasury, setTreasury] = useState(TOKENOMICS.TARGET_MARKET_CAP * TOKENOMICS.ALLOCATION.DAO); // $7.6M initial liquid pool
+  // Adjusted for 1B @ $0.19 Target
+  const [treasury, setTreasury] = useState(TOKENOMICS.TARGET_MARKET_CAP * TOKENOMICS.ALLOCATION.DAO); // $76M initial liquid pool at 40% of 1B
   const [totalRewarded, setTotalRewarded] = useState(0);
   const [logs, setLogs] = useState<TransactionLog[]>([]);
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
@@ -129,7 +129,6 @@ const App: React.FC = () => {
         const newVotesFor = side === 'FOR' ? p.votesFor + 1 : p.votesFor;
         const newVotesAgainst = side === 'AGAINST' ? p.votesAgainst + 1 : p.votesAgainst;
         
-        // Use PeaceProject['status'] type explicitly to avoid literal type inference errors
         let newStatus: PeaceProject['status'] = p.status;
         if (newVotesFor >= VOTE_QUOTA) {
           newStatus = 'VALIDATED';
@@ -213,7 +212,7 @@ const App: React.FC = () => {
   };
 
   const togglePause = () => {
-    if (!walletAddress) return;
+    if (!walletAddress || currentTier !== IdentityTier.INSTITUTION) return;
     setIsPaused(!isPaused);
     addLog('STAKE', 0, 'PT');
   };
@@ -236,6 +235,8 @@ const App: React.FC = () => {
     a.download = `PEACE_LEDGER_AUDIT_${Date.now()}.json`;
     a.click();
   };
+
+  const isArchitect = currentTier === IdentityTier.INSTITUTION;
 
   return (
     <div className="min-h-screen flex flex-col selection:bg-blue-500/30">
@@ -316,12 +317,19 @@ const App: React.FC = () => {
                 >
                    <div className="status-pulse"></div> Export Audit
                 </button>
-                <button 
-                  onClick={togglePause}
-                  className={`px-4 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all border ${isPaused ? 'bg-emerald-600 text-white border-emerald-500 shadow-lg shadow-emerald-900/20' : 'bg-rose-900/20 border-rose-500/20 text-rose-500 hover:bg-rose-500/20'}`}
-                >
-                  {isPaused ? 'RESUME PROTOCOL' : 'PANIC REVERT'}
-                </button>
+                {isArchitect ? (
+                  <button 
+                    onClick={togglePause}
+                    className={`px-4 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all border ${isPaused ? 'bg-emerald-600 text-white border-emerald-500 shadow-lg shadow-emerald-900/20' : 'bg-rose-900/20 border-rose-500/20 text-rose-500 hover:bg-rose-500/20'}`}
+                  >
+                    {isPaused ? 'RESUME PROTOCOL' : 'PANIC REVERT'}
+                  </button>
+                ) : (
+                  <div className="px-4 py-2 bg-white/5 border border-white/10 rounded-lg flex items-center gap-2">
+                    <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></div>
+                    <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Protocol Stable</span>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -383,7 +391,7 @@ const App: React.FC = () => {
             </div>
             <div>
               <h5 className="text-[10px] font-black text-white uppercase tracking-widest mb-4">Allocation Policy</h5>
-              <p className="text-[10px] text-slate-500 leading-relaxed">50% Rewards | 40% DAO Treasury | 10% Systems. Supply Capped at 100,000,000 PEACE.</p>
+              <p className="text-[10px] text-slate-500 leading-relaxed">50% Rewards | 40% DAO Treasury | 10% Systems. Supply Capped at 1,000,000,000 PEACE.</p>
             </div>
             <div>
               <h5 className="text-[10px] font-black text-white uppercase tracking-widest mb-4">Architecture Role</h5>
