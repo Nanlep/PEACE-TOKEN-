@@ -10,6 +10,7 @@ import CommunityWidget from './components/CommunityWidget';
 import ExchangeModal from './components/ExchangeModal';
 import FundingModal from './components/FundingModal';
 import UserGuideModal from './components/UserGuideModal';
+import ComplianceModal from './components/ComplianceModal';
 // Added ProjectStatus to imports
 import { PeaceProject, DAOProposal, IdentityTier, TransactionLog, SystemHealth, ProjectStatus } from './types';
 import { Icons, TOKENOMICS } from './constants';
@@ -47,6 +48,7 @@ const App: React.FC = () => {
   const [isExchangeOpen, setIsExchangeOpen] = useState(false);
   const [isFundingOpen, setIsFundingOpen] = useState(false);
   const [isUserGuideOpen, setIsUserGuideOpen] = useState(false);
+  const [isComplianceOpen, setIsComplianceOpen] = useState(false);
 
   const [proposals, setProposals] = useState<DAOProposal[]>([
     {
@@ -213,7 +215,7 @@ const App: React.FC = () => {
              <div className="mt-20 flex gap-8 border-t border-white/5 pt-10">
                <button onClick={() => setIsUserGuideOpen(true)} className="text-[10px] font-black uppercase text-blue-400 tracking-widest hover:text-white transition-colors">Documentation</button>
                <button onClick={downloadWhitePaper} className="text-[10px] font-black uppercase text-slate-500 tracking-widest hover:text-white transition-colors">White-paper</button>
-               <button className="text-[10px] font-black uppercase text-slate-500 tracking-widest hover:text-white transition-colors">Compliance Audit</button>
+               <button onClick={() => setIsComplianceOpen(true)} className="text-[10px] font-black uppercase text-slate-500 tracking-widest hover:text-white transition-colors">Compliance Audit</button>
              </div>
           </div>
         ) : (
@@ -275,6 +277,7 @@ const App: React.FC = () => {
       />
       <FundingModal isOpen={isFundingOpen} onClose={() => setIsFundingOpen(false)} onFund={handleFundUSDC} />
       <UserGuideModal isOpen={isUserGuideOpen} onClose={() => setIsUserGuideOpen(false)} />
+      <ComplianceModal isOpen={isComplianceOpen} onClose={() => setIsComplianceOpen(false)} treasuryUSDC={treasuryUSDC} />
     </div>
   );
 };
