@@ -118,6 +118,16 @@ const UserGuideModal: React.FC<UserGuideModalProps> = ({ isOpen, onClose }) => {
                   </div>
 
                   <div>
+                    <h4 className="text-blue-400 text-[11px] font-black uppercase tracking-widest mb-2">Q: How do Level 2 (Expert) users benefit from participating in the protocol?</h4>
+                    <p className="text-sm text-slate-400">Level 2 users gain a <strong>2.5x Reward Multiplier</strong> on impact submissions, <strong>DAO Voting Rights</strong> to influence treasury spending, and access to <strong>Validation Bounties</strong> sourced from slashed fees of bad actors. They also build a verifiable on-chain reputation as trusted mediators.</p>
+                  </div>
+
+                  <div>
+                    <h4 className="text-blue-400 text-[11px] font-black uppercase tracking-widest mb-2">Q: Are tier 2 and 3 users required to acquire a certain number of peace tokens to be verified?</h4>
+                    <p className="text-sm text-slate-400"><strong>Level 2 (Expert):</strong> Yes, a mandatory 1,000 PT Stake is required as collateral for governance and validation powers. <strong>Level 3 (Institution):</strong> No initial token purchase is required, but verification is contingent upon a Deep Compliance Audit and institutional capital commitments to support the Treasury's solvency.</p>
+                  </div>
+
+                  <div>
                     <h4 className="text-blue-400 text-[11px] font-black uppercase tracking-widest mb-2">Q: What happens if an AI validation is disputed?</h4>
                     <p className="text-sm text-slate-400">If the Oracle rejects a claim, it can be appealed to the Level 2 Expert Pool. Experts must stake PT to initiate a manual audit. If the Oracle is proven wrong, the Oracle is re-trained and the Experts earn the slashed validation fees.</p>
                   </div>
