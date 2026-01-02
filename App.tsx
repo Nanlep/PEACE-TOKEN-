@@ -71,6 +71,10 @@ const App: React.FC = () => {
     }
   ]);
 
+  const canVote = useMemo(() => 
+    currentTier === IdentityTier.EXPERT || currentTier === IdentityTier.INSTITUTION, 
+  [currentTier]);
+
   // --- MARKET SIMULATION ---
   useEffect(() => {
     const market = setInterval(() => {
@@ -224,19 +228,16 @@ const App: React.FC = () => {
 
   const handleVoteProposal = (id: string, side: 'FOR' | 'AGAINST') => {
     if (isPaused || !walletAddress) return;
-    if (currentTier !== IdentityTier.EXPERT && currentTier !== IdentityTier.INSTITUTION) {
+    if (!canVote) {
       alert("Eligibility Restricted: Level 2+ Required for Governance.");
       return;
     }
     setProposals(prev => prev.map(p => {
       if (p.id === id && p.status === 'ACTIVE') {
-        // Simple weight simulation: institutions have 5x voting weight
         const weight = currentTier === IdentityTier.INSTITUTION ? 500 : 100;
         const newVotesFor = side === 'FOR' ? p.votesFor + weight : p.votesFor;
         const newVotesAgainst = side === 'AGAINST' ? p.votesAgainst + weight : p.votesAgainst;
         
-        // Check for Quorum (Simulated threshold)
-        // Fix: Explicitly type newStatus to prevent narrowing to 'ACTIVE' and allow transition to 'PASSED' or 'FAILED'
         let newStatus: DAOProposal['status'] = p.status;
         if (newVotesFor > 50000) newStatus = 'PASSED';
         if (newVotesAgainst > 50000) newStatus = 'FAILED';
@@ -365,6 +366,7 @@ const App: React.FC = () => {
                           proposal={p} 
                           onVote={handleVoteProposal} 
                           onExecute={id => addLog('MINT', 0, 'PT', `Executed ${id}`)} 
+                          canVote={canVote}
                         />
                       ))}
                    </div>

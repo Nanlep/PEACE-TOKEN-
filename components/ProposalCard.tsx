@@ -7,9 +7,10 @@ interface ProposalCardProps {
   proposal: DAOProposal;
   onVote: (id: string, side: 'FOR' | 'AGAINST') => void;
   onExecute: (id: string) => void;
+  canVote: boolean;
 }
 
-const ProposalCard: React.FC<ProposalCardProps> = ({ proposal, onVote, onExecute }) => {
+const ProposalCard: React.FC<ProposalCardProps> = ({ proposal, onVote, onExecute, canVote }) => {
   const totalVotes = proposal.votesFor + proposal.votesAgainst;
   const percentageFor = totalVotes > 0 ? (proposal.votesFor / totalVotes) * 100 : 0;
   
@@ -41,24 +42,54 @@ const ProposalCard: React.FC<ProposalCardProps> = ({ proposal, onVote, onExecute
       <div className="flex gap-2">
         {proposal.status === 'ACTIVE' && (
           <>
-            <button 
-              onClick={() => onVote(proposal.id, 'FOR')}
-              className="flex-1 py-1.5 bg-emerald-600/10 hover:bg-emerald-600/20 text-emerald-400 border border-emerald-600/30 rounded text-[10px] font-bold uppercase transition-all"
-            >
-              Vote For
-            </button>
-            <button 
-              onClick={() => onVote(proposal.id, 'AGAINST')}
-              className="flex-1 py-1.5 bg-rose-600/10 hover:bg-rose-600/20 text-rose-400 border border-rose-600/30 rounded text-[10px] font-bold uppercase transition-all"
-            >
-              Against
-            </button>
+            <div className="flex-1 relative group/btn">
+              <button 
+                disabled={!canVote}
+                onClick={() => onVote(proposal.id, 'FOR')}
+                className={`w-full py-1.5 rounded text-[10px] font-bold uppercase transition-all border ${
+                  canVote 
+                  ? 'bg-emerald-600/10 hover:bg-emerald-600/20 text-emerald-400 border-emerald-600/30' 
+                  : 'bg-slate-800/50 text-slate-600 border-white/5 cursor-not-allowed'
+                }`}
+              >
+                Vote For
+              </button>
+              {!canVote && (
+                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-32 p-2 bg-black border border-white/10 rounded text-[8px] text-slate-400 text-center opacity-0 group-hover/btn:opacity-100 pointer-events-none transition-opacity z-20">
+                  Level 2 Identity Required to Vote
+                </div>
+              )}
+            </div>
+            
+            <div className="flex-1 relative group/btn">
+              <button 
+                disabled={!canVote}
+                onClick={() => onVote(proposal.id, 'AGAINST')}
+                className={`w-full py-1.5 rounded text-[10px] font-bold uppercase transition-all border ${
+                  canVote 
+                  ? 'bg-rose-600/10 hover:bg-rose-600/20 text-rose-400 border-rose-600/30' 
+                  : 'bg-slate-800/50 text-slate-600 border-white/5 cursor-not-allowed'
+                }`}
+              >
+                Against
+              </button>
+              {!canVote && (
+                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-32 p-2 bg-black border border-white/10 rounded text-[8px] text-slate-400 text-center opacity-0 group-hover/btn:opacity-100 pointer-events-none transition-opacity z-20">
+                  Level 2 Identity Required to Vote
+                </div>
+              )}
+            </div>
           </>
         )}
         {proposal.status === 'PASSED' && (
           <button 
+            disabled={!canVote}
             onClick={() => onExecute(proposal.id)}
-            className="w-full py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded text-[10px] font-bold uppercase transition-all shadow-lg shadow-blue-900/40"
+            className={`w-full py-1.5 rounded text-[10px] font-bold uppercase transition-all shadow-lg ${
+              canVote 
+              ? 'bg-blue-600 hover:bg-blue-500 text-white shadow-blue-900/40' 
+              : 'bg-slate-800 text-slate-500 cursor-not-allowed'
+            }`}
           >
             Execute Proposal
           </button>
