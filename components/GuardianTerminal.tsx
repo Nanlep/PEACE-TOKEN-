@@ -8,12 +8,37 @@ interface GuardianTerminalProps {
   onClose: () => void;
   pendingRequests: InstitutionalRequest[];
   onSign: (requestId: string, guardianId: string) => void;
+  activeGuardianId: string | null;
+  onAuth: (id: string | null) => void;
 }
 
-const GuardianTerminal: React.FC<GuardianTerminalProps> = ({ isOpen, onClose, pendingRequests, onSign }) => {
-  const [activeGuardian, setActiveGuardian] = useState<string | null>(null);
+const GuardianTerminal: React.FC<GuardianTerminalProps> = ({ 
+  isOpen, 
+  onClose, 
+  pendingRequests, 
+  onSign,
+  activeGuardianId,
+  onAuth
+}) => {
+  const [selectedGuardian, setSelectedGuardian] = useState<string | null>(activeGuardianId);
+  const [isVerifying, setIsVerifying] = useState(false);
 
   if (!isOpen) return null;
+
+  const handleVerifySession = () => {
+    if (!selectedGuardian) return;
+    setIsVerifying(true);
+    // Simulated Secure Handshake (HSM)
+    setTimeout(() => {
+      onAuth(selectedGuardian);
+      setIsVerifying(false);
+    }, 1500);
+  };
+
+  const handleRevokeSession = () => {
+    onAuth(null);
+    setSelectedGuardian(null);
+  };
 
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
@@ -41,78 +66,116 @@ const GuardianTerminal: React.FC<GuardianTerminalProps> = ({ isOpen, onClose, pe
             {GUARDIAN_REGISTRY.map((g) => (
               <button
                 key={g.id}
-                onClick={() => setActiveGuardian(g.id)}
-                className={`w-full p-3 rounded-lg border text-left transition-all ${
-                  activeGuardian === g.id 
+                onClick={() => setSelectedGuardian(g.id)}
+                className={`w-full p-3 rounded-lg border text-left transition-all relative ${
+                  selectedGuardian === g.id 
                   ? 'bg-amber-500/10 border-amber-500/50 text-amber-500' 
                   : 'bg-white/5 border-white/5 text-slate-500 hover:border-amber-500/20'
                 }`}
               >
                 <div className="text-[10px] font-black uppercase tracking-tighter">{g.id}</div>
                 <div className="text-[8px] font-mono opacity-50 truncate">{g.entity}</div>
+                {activeGuardianId === g.id && (
+                  <div className="absolute top-2 right-2 w-1.5 h-1.5 bg-amber-500 rounded-full animate-pulse shadow-[0_0_5px_rgba(245,158,11,1)]"></div>
+                )}
               </button>
             ))}
           </div>
 
-          {/* Audit Queue */}
+          {/* Audit Queue & Auth Control */}
           <div className="flex-1 p-8 overflow-y-auto custom-scrollbar bg-black/20">
-            {!activeGuardian ? (
+            {!selectedGuardian ? (
               <div className="h-full flex flex-col items-center justify-center text-center space-y-4">
                 <div className="w-16 h-16 border-2 border-amber-500/10 rounded-full flex items-center justify-center">
                    <div className="status-pulse bg-amber-500 scale-150"></div>
                 </div>
-                <p className="text-xs text-amber-500/40 font-mono uppercase tracking-widest">Select Guardian Identity to Proceed with At-Rest Data Audit</p>
+                <p className="text-xs text-amber-500/40 font-mono uppercase tracking-widest">Select Guardian Identity to Initialize Secure Session</p>
               </div>
             ) : (
               <div className="space-y-8 animate-in fade-in slide-in-from-right-4">
-                <div className="flex justify-between items-end">
-                  <h3 className="text-sm font-black text-white uppercase tracking-widest">Pending Institutional Attestations</h3>
-                  <span className="text-[10px] text-amber-500 font-mono bg-amber-500/5 px-2 py-1 rounded border border-amber-500/20">
-                    ACTIVE SESS: {activeGuardian}
-                  </span>
+                {/* Auth Module */}
+                <div className="p-6 bg-amber-500/5 border border-amber-500/10 rounded-2xl flex items-center justify-between">
+                  <div>
+                    <h3 className="text-sm font-black text-white uppercase tracking-widest mb-1">Guardian Identity Verification</h3>
+                    <p className="text-[10px] text-amber-500/60 font-mono uppercase">Status: {activeGuardianId === selectedGuardian ? 'SESSION_VERIFIED' : 'AWAITING_HSM_HANDSHAKE'}</p>
+                  </div>
+                  {activeGuardianId === selectedGuardian ? (
+                    <button 
+                      onClick={handleRevokeSession}
+                      className="px-6 py-2 bg-rose-600 text-white text-[9px] font-black uppercase tracking-widest rounded-lg hover:bg-rose-500 transition-colors"
+                    >
+                      Revoke Session
+                    </button>
+                  ) : (
+                    <button 
+                      disabled={isVerifying}
+                      onClick={handleVerifySession}
+                      className="px-6 py-2 bg-amber-500 text-black text-[9px] font-black uppercase tracking-widest rounded-lg hover:bg-amber-400 transition-colors disabled:opacity-50"
+                    >
+                      {isVerifying ? 'VERIFYING HSM...' : 'INIT SECURE SESSION'}
+                    </button>
+                  )}
                 </div>
 
-                {pendingRequests.length === 0 ? (
-                  <div className="p-12 border border-white/5 rounded-2xl bg-white/5 text-center">
-                    <p className="text-xs text-slate-500 italic">No Level-3 transitions awaiting attestation in this block.</p>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 gap-4">
-                    {pendingRequests.map((req) => (
-                      <div key={req.id} className="p-6 bg-white/5 border border-white/10 rounded-2xl hover:border-amber-500/30 transition-all">
-                        <div className="flex justify-between items-start mb-6">
-                          <div>
-                            <p className="text-[9px] text-amber-500 font-black uppercase mb-1">REQ_ID: {req.id}</p>
-                            <h4 className="text-lg font-bold text-white">{req.entityName}</h4>
-                            <p className="text-[10px] text-slate-500 font-mono truncate max-w-xs">{req.credentialsHash}</p>
-                          </div>
-                          <div className="text-right">
-                             <p className="text-[9px] text-slate-500 uppercase font-black mb-1">QUORUM STATUS</p>
-                             <div className="flex gap-1 justify-end">
-                                {[1,2,3,4,5,6,7].map((i) => (
-                                  <div key={i} className={`w-2 h-2 rounded-full ${i <= req.signatures.length ? 'bg-amber-500 shadow-[0_0_5px_rgba(245,158,11,1)]' : 'bg-slate-800'}`}></div>
-                                ))}
-                             </div>
-                             <p className="text-[10px] text-amber-500 font-mono mt-1 font-bold">{req.signatures.length}/4</p>
-                          </div>
-                        </div>
+                <div className="h-px bg-white/5"></div>
 
-                        <div className="flex gap-4">
-                          <button 
-                            disabled={req.signatures.includes(activeGuardian!)}
-                            onClick={() => onSign(req.id, activeGuardian!)}
-                            className="flex-1 py-3 bg-amber-600 hover:bg-amber-500 disabled:opacity-30 disabled:cursor-not-allowed text-black font-black text-[10px] uppercase tracking-widest rounded-xl transition-all shadow-xl shadow-amber-900/20"
-                          >
-                            {req.signatures.includes(activeGuardian!) ? 'SIGNATURE ATTACHED' : 'BROADCAST SIGNATURE'}
-                          </button>
-                          <button className="px-6 py-3 bg-white/5 hover:bg-white/10 text-white font-black text-[10px] uppercase tracking-widest rounded-xl border border-white/10 transition-all">
-                            View Audit History
-                          </button>
-                        </div>
-                      </div>
-                    ))}
+                {/* Audit Content: Only visible if a guardian is at least selected */}
+                <div className="space-y-6">
+                  <div className="flex justify-between items-end">
+                    <h3 className="text-sm font-black text-white uppercase tracking-widest">Pending Institutional Attestations</h3>
+                    {activeGuardianId === selectedGuardian && (
+                      <span className="text-[10px] text-amber-500 font-mono bg-amber-500/5 px-2 py-1 rounded border border-amber-500/20">
+                        ACTIVE AUTH TOKEN: {selectedGuardian.split('-')[1]}
+                      </span>
+                    )}
                   </div>
-                )}
+
+                  {pendingRequests.length === 0 ? (
+                    <div className="p-12 border border-white/5 rounded-2xl bg-white/5 text-center">
+                      <p className="text-xs text-slate-500 italic">No Level-3 transitions awaiting attestation in this block.</p>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 gap-4">
+                      {pendingRequests.map((req) => (
+                        <div key={req.id} className="p-6 bg-white/5 border border-white/10 rounded-2xl hover:border-amber-500/30 transition-all">
+                          <div className="flex justify-between items-start mb-6">
+                            <div>
+                              <p className="text-[9px] text-amber-500 font-black uppercase mb-1">REQ_ID: {req.id}</p>
+                              <h4 className="text-lg font-bold text-white">{req.entityName}</h4>
+                              <p className="text-[10px] text-slate-500 font-mono truncate max-w-xs">{req.credentialsHash}</p>
+                            </div>
+                            <div className="text-right">
+                               <p className="text-[9px] text-slate-500 uppercase font-black mb-1">QUORUM STATUS</p>
+                               <div className="flex gap-1 justify-end">
+                                  {[1,2,3,4,5,6,7].map((i) => (
+                                    <div key={i} className={`w-2 h-2 rounded-full ${i <= req.signatures.length ? 'bg-amber-500 shadow-[0_0_5px_rgba(245,158,11,1)]' : 'bg-slate-800'}`}></div>
+                                  ))}
+                               </div>
+                               <p className="text-[10px] text-amber-500 font-mono mt-1 font-bold">{req.signatures.length}/4</p>
+                            </div>
+                          </div>
+
+                          <div className="flex gap-4">
+                            <button 
+                              disabled={!activeGuardianId || activeGuardianId !== selectedGuardian || req.signatures.includes(selectedGuardian!)}
+                              onClick={() => onSign(req.id, selectedGuardian!)}
+                              className="flex-1 py-3 bg-amber-600 hover:bg-amber-500 disabled:opacity-30 disabled:grayscale disabled:cursor-not-allowed text-black font-black text-[10px] uppercase tracking-widest rounded-xl transition-all shadow-xl shadow-amber-900/20"
+                            >
+                              {!activeGuardianId || activeGuardianId !== selectedGuardian 
+                                ? 'VERIFY SESSION TO SIGN' 
+                                : req.signatures.includes(selectedGuardian!) 
+                                  ? 'SIGNATURE ATTACHED' 
+                                  : 'BROADCAST SIGNATURE'}
+                            </button>
+                            <button className="px-6 py-3 bg-white/5 hover:bg-white/10 text-white font-black text-[10px] uppercase tracking-widest rounded-xl border border-white/10 transition-all">
+                              View Audit History
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
             )}
           </div>

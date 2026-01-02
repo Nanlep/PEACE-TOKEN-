@@ -30,6 +30,7 @@ const App: React.FC = () => {
   // --- GUARDIAN STATE ---
   const [isGuardianTerminalOpen, setIsGuardianTerminalOpen] = useState(false);
   const [institutionalRequests, setInstitutionalRequests] = useState<InstitutionalRequest[]>([]);
+  const [activeGuardianId, setActiveGuardianId] = useState<string | null>(null);
 
   // --- ASSET STATE ---
   const [treasuryUSDC, setTreasuryUSDC] = useState(TOKENOMICS.TARGET_MARKET_CAP * TOKENOMICS.ALLOCATION.DAO); 
@@ -97,6 +98,7 @@ const App: React.FC = () => {
         setIsDiscordLinked(data.isDiscordLinked || false);
         setWalletAddress(data.walletAddress || null);
         setInstitutionalRequests(data.institutionalRequests || []);
+        // Guardians session is purposefully NOT persisted for security reasons
       } catch (e) { console.error("Snapshot corruption detected. Resetting state."); }
     }
   }, []);
@@ -125,6 +127,7 @@ const App: React.FC = () => {
 
   const handleDisconnect = () => {
     setWalletAddress(null);
+    setActiveGuardianId(null);
     addLog('STAKE', 0, 'PT', 'Session Terminated by User');
   };
 
@@ -141,14 +144,21 @@ const App: React.FC = () => {
         
         if (newStatus === 'APPROVED' && req.status !== 'APPROVED') {
            addLog('MINT', 0, 'PT', `Institutional Quorum Reached: ${req.entityName}`);
-           // In a real app, this would update the user's Tier state if matched to wallet
-           // For this simulation, we finalize the state via the verification component
         }
         
         return { ...req, signatures: newSigs, status: newStatus as any };
       }
       return req;
     }));
+  };
+
+  const handleGuardianAuth = (id: string | null) => {
+    setActiveGuardianId(id);
+    if (id) {
+      addLog('STAKE', 0, 'PT', `Guardian Authenticated: ${id}`);
+    } else {
+      addLog('STAKE', 0, 'PT', `Guardian Session Revoked`);
+    }
   };
 
   const handleProjectValidated = (newProject: PeaceProject) => {
@@ -210,8 +220,6 @@ const App: React.FC = () => {
     addLog('BRIDGE', amount, 'USDC', 'Global Liquidity Bridge');
   };
 
-  const isArchitect = currentTier === IdentityTier.INSTITUTION;
-
   return (
     <div className="min-h-screen flex flex-col bg-[#0a0a0c] text-slate-200">
       <Header 
@@ -266,8 +274,10 @@ const App: React.FC = () => {
                 <button onClick={() => setIsGuardianTerminalOpen(true)} className="px-4 py-2 bg-amber-600/10 text-amber-500 border border-amber-500/20 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all hover:bg-amber-500 hover:text-black">Guardian Portal</button>
                 <button onClick={() => setIsFundingOpen(true)} className="px-4 py-2 glass-panel hover:bg-emerald-600/10 hover:text-emerald-400 border-white/10 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all">Liquidity Bridge</button>
                 <button onClick={() => setIsUserGuideOpen(true)} className="px-4 py-2 glass-panel hover:bg-blue-600/10 hover:text-blue-400 border-white/10 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all">Protocol Guide</button>
-                {isArchitect && (
-                  <button onClick={() => setIsPaused(!isPaused)} className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all border ${isPaused ? 'bg-emerald-600 border-emerald-500 text-white' : 'bg-rose-900/30 border-rose-500/30 text-rose-500 hover:bg-rose-500/20'}`}>
+                
+                {/* Panic Button: Restricted strictly to authenticated System Guardians */}
+                {activeGuardianId && (
+                  <button onClick={() => setIsPaused(!isPaused)} className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-[0.2em] transition-all border shadow-lg ${isPaused ? 'bg-emerald-600 border-emerald-500 text-white shadow-emerald-900/40' : 'bg-rose-900/60 border-rose-500 text-rose-200 hover:bg-rose-500 hover:text-white shadow-rose-900/40 animate-pulse'}`}>
                     {isPaused ? 'RESUME PROTOCOL' : 'PANIC REVERT'}
                   </button>
                 )}
@@ -321,11 +331,20 @@ const App: React.FC = () => {
         onClose={() => setIsGuardianTerminalOpen(false)} 
         pendingRequests={institutionalRequests.filter(r => r.status === 'PENDING')}
         onSign={handleGuardianSign}
+        activeGuardianId={activeGuardianId}
+        onAuth={handleGuardianAuth}
       />
 
       {/* Persistence Hook for Sync */}
       <footer className="max-w-7xl mx-auto w-full px-8 py-4 flex justify-between items-center text-[9px] text-slate-600 font-mono uppercase">
-         <div>© 2025 Peace-Token Protocol | Production-Stable V4.2</div>
+         <div className="flex items-center gap-4">
+            <span>© 2025 Peace-Token Protocol | v4.2</span>
+            {activeGuardianId && (
+              <span className="text-amber-500 font-black animate-pulse flex items-center gap-1">
+                 <div className="w-1.5 h-1.5 bg-amber-500 rounded-full"></div> GUARDIAN SESSION ACTIVE: {activeGuardianId}
+              </span>
+            )}
+         </div>
          <div className="flex gap-4">
             <span className="flex items-center gap-1"><div className="w-1 h-1 bg-emerald-500 rounded-full"></div> LEDGER SYNCED</span>
             <span className="cursor-help hover:text-amber-500" onClick={() => setIsGuardianTerminalOpen(true)}>GUARDIAN_GATEWAY_AUTH</span>
