@@ -12,6 +12,7 @@ import FundingModal from './components/FundingModal';
 import UserGuideModal from './components/UserGuideModal';
 import ComplianceModal from './components/ComplianceModal';
 import GuardianTerminal from './components/GuardianTerminal';
+import NewProposalModal from './components/NewProposalModal';
 import { PeaceProject, DAOProposal, IdentityTier, TransactionLog, SystemHealth, ProjectStatus, InstitutionalRequest } from './types';
 import { Icons, TOKENOMICS } from './constants';
 import { ProtocolService } from './services/protocolService';
@@ -54,6 +55,7 @@ const App: React.FC = () => {
   const [isFundingOpen, setIsFundingOpen] = useState(false);
   const [isUserGuideOpen, setIsUserGuideOpen] = useState(false);
   const [isComplianceOpen, setIsComplianceOpen] = useState(false);
+  const [isNewProposalOpen, setIsNewProposalOpen] = useState(false);
 
   const [proposals, setProposals] = useState<DAOProposal[]>([
     {
@@ -98,15 +100,15 @@ const App: React.FC = () => {
         setIsDiscordLinked(data.isDiscordLinked || false);
         setWalletAddress(data.walletAddress || null);
         setInstitutionalRequests(data.institutionalRequests || []);
-        // Guardians session is purposefully NOT persisted for security reasons
+        setProposals(data.proposals || proposals);
       } catch (e) { console.error("Snapshot corruption detected. Resetting state."); }
     }
   }, []);
 
   useEffect(() => {
-    const state = { projects, logs, treasuryUSDC, totalRewardedPT, balancePT, balanceUSDC, currentTier, isDiscordLinked, walletAddress, institutionalRequests };
+    const state = { projects, logs, treasuryUSDC, totalRewardedPT, balancePT, balanceUSDC, currentTier, isDiscordLinked, walletAddress, institutionalRequests, proposals };
     localStorage.setItem(PERSISTENCE_VERSION, JSON.stringify(state));
-  }, [projects, logs, treasuryUSDC, totalRewardedPT, balancePT, balanceUSDC, currentTier, isDiscordLinked, walletAddress, institutionalRequests]);
+  }, [projects, logs, treasuryUSDC, totalRewardedPT, balancePT, balanceUSDC, currentTier, isDiscordLinked, walletAddress, institutionalRequests, proposals]);
 
   // --- LOGIC HANDLERS ---
   const addLog = (type: TransactionLog['type'], amount: number, currency: TransactionLog['currency'], metadata?: string) => {
@@ -220,6 +222,49 @@ const App: React.FC = () => {
     addLog('BRIDGE', amount, 'USDC', 'Global Liquidity Bridge');
   };
 
+  const handleVoteProposal = (id: string, side: 'FOR' | 'AGAINST') => {
+    if (isPaused || !walletAddress) return;
+    if (currentTier !== IdentityTier.EXPERT && currentTier !== IdentityTier.INSTITUTION) {
+      alert("Eligibility Restricted: Level 2+ Required for Governance.");
+      return;
+    }
+    setProposals(prev => prev.map(p => {
+      if (p.id === id && p.status === 'ACTIVE') {
+        // Simple weight simulation: institutions have 5x voting weight
+        const weight = currentTier === IdentityTier.INSTITUTION ? 500 : 100;
+        const newVotesFor = side === 'FOR' ? p.votesFor + weight : p.votesFor;
+        const newVotesAgainst = side === 'AGAINST' ? p.votesAgainst + weight : p.votesAgainst;
+        
+        // Check for Quorum (Simulated threshold)
+        // Fix: Explicitly type newStatus to prevent narrowing to 'ACTIVE' and allow transition to 'PASSED' or 'FAILED'
+        let newStatus: DAOProposal['status'] = p.status;
+        if (newVotesFor > 50000) newStatus = 'PASSED';
+        if (newVotesAgainst > 50000) newStatus = 'FAILED';
+
+        addLog('VOTE', 0, 'PT', `Voted ${side} on ${id}`);
+        return { ...p, votesFor: newVotesFor, votesAgainst: newVotesAgainst, status: newStatus };
+      }
+      return p;
+    }));
+  };
+
+  const handleCreateProposal = (data: Partial<DAOProposal>) => {
+    const newProposal: DAOProposal = {
+      id: `PIP-${Math.floor(Math.random() * 900) + 100}`,
+      title: data.title || 'Untitled Proposal',
+      description: data.description || '',
+      category: data.category || 'TREASURY',
+      deadline: data.deadline || Date.now() + 604800000,
+      status: 'ACTIVE',
+      votesFor: 0,
+      votesAgainst: 0,
+      proposer: walletAddress?.slice(0, 6) || 'Unknown'
+    };
+    setProposals(prev => [newProposal, ...prev]);
+    setBalancePT(prev => prev - 500); // 500 PT Stake requirement
+    addLog('STAKE', 500, 'PT', `Governance Stake: ${newProposal.id}`);
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-[#0a0a0c] text-slate-200">
       <Header 
@@ -302,12 +347,25 @@ const App: React.FC = () => {
                 />
                 <CommunityWidget isDiscordLinked={isDiscordLinked} onLinkDiscord={() => setIsDiscordLinked(true)} />
                 <div className="glass-panel p-6 rounded-3xl border border-white/10">
-                   <h3 className="text-sm font-black text-white uppercase tracking-widest mb-6 flex items-center gap-2">
-                      <Icons.Vote /> DAO GOVERNANCE
-                   </h3>
+                   <div className="flex justify-between items-center mb-6">
+                      <h3 className="text-sm font-black text-white uppercase tracking-widest flex items-center gap-2">
+                          <Icons.Vote /> DAO GOVERNANCE
+                      </h3>
+                      <button 
+                        onClick={() => setIsNewProposalOpen(true)}
+                        className="text-[9px] font-black uppercase text-blue-400 border border-blue-400/20 px-2 py-1 rounded hover:bg-blue-400 hover:text-black transition-all"
+                      >
+                        + New Proposal
+                      </button>
+                   </div>
                    <div className="space-y-4">
                       {proposals.map(p => (
-                        <ProposalCard key={p.id} proposal={p} onVote={(id, s) => console.log(id, s)} onExecute={id => console.log(id)} />
+                        <ProposalCard 
+                          key={p.id} 
+                          proposal={p} 
+                          onVote={handleVoteProposal} 
+                          onExecute={id => addLog('MINT', 0, 'PT', `Executed ${id}`)} 
+                        />
                       ))}
                    </div>
                 </div>
@@ -333,6 +391,13 @@ const App: React.FC = () => {
         onSign={handleGuardianSign}
         activeGuardianId={activeGuardianId}
         onAuth={handleGuardianAuth}
+      />
+
+      <NewProposalModal 
+        isOpen={isNewProposalOpen} 
+        onClose={() => setIsNewProposalOpen(false)} 
+        onSubmit={handleCreateProposal}
+        userTier={currentTier}
       />
 
       {/* Persistence Hook for Sync */}
