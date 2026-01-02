@@ -10,6 +10,17 @@ export const COLORS = {
   PANEL: 'rgba(255, 255, 255, 0.05)',
 };
 
+export const TOKENOMICS = {
+  TOTAL_SUPPLY: 100000000,
+  INITIAL_PRICE_USDC: 0.19,
+  ALLOCATION: {
+    REWARDS: 0.50, // 50M tokens
+    DAO: 0.40,     // 40M tokens
+    SYSTEM: 0.10,  // 10M tokens
+  },
+  TARGET_MARKET_CAP: 19000000, // 100M * 0.19
+};
+
 export const SYSTEM_CONFIG = {
   REWARD_MULTIPLIERS: {
     [ 'UNVERIFIED' ]: 0.1,

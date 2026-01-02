@@ -2,6 +2,7 @@
 import React, { useState, useRef } from 'react';
 import { IdentityTier } from '../types';
 import { Icons } from '../constants';
+import { auditInstitutionalIdentity } from '../services/geminiService';
 
 interface IdentityVerificationProps {
   currentTier: IdentityTier;
@@ -19,6 +20,7 @@ const IdentityVerification: React.FC<IdentityVerificationProps> = ({
   const [isProcessing, setIsProcessing] = useState(false);
   const [activeTab, setActiveTab] = useState<IdentityTier>(currentTier);
   const [showCamera, setShowCamera] = useState(false);
+  const [auditLog, setAuditLog] = useState<string | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
 
   const tierMetadata = {
@@ -34,7 +36,6 @@ const IdentityVerification: React.FC<IdentityVerificationProps> = ({
       const stream = await navigator.mediaDevices.getUserMedia({ video: true });
       if (videoRef.current) videoRef.current.srcObject = stream;
       
-      // Simulate Biometric Scanning
       setTimeout(() => {
         stream.getTracks().forEach(track => track.stop());
         setShowCamera(false);
@@ -44,6 +45,29 @@ const IdentityVerification: React.FC<IdentityVerificationProps> = ({
       alert("Camera access denied. Biometric verification is mandatory for Expert tier.");
       setShowCamera(false);
     }
+  };
+
+  const runInstitutionalAudit = async () => {
+    setIsProcessing(true);
+    setAuditLog("Initializing Oracle Compliance Check...");
+    
+    const result = await auditInstitutionalIdentity(
+      "SIMULATED_ENTITY_01",
+      "0x" + Math.random().toString(16).substr(2, 64)
+    );
+
+    setAuditLog(result.reasoning);
+
+    setTimeout(() => {
+      if (result.isApproved) {
+        onTierUpgrade(IdentityTier.INSTITUTION);
+        setActiveTab(IdentityTier.INSTITUTION);
+      } else {
+        alert("AUDIT REJECTED: " + result.reasoning);
+      }
+      setIsProcessing(false);
+      setAuditLog(null);
+    }, 3000);
   };
 
   const finalizeUpgrade = (targetTier: IdentityTier) => {
@@ -66,17 +90,26 @@ const IdentityVerification: React.FC<IdentityVerificationProps> = ({
       return;
     }
 
+    if (targetTier === IdentityTier.INSTITUTION) {
+      runInstitutionalAudit();
+      return;
+    }
+
     finalizeUpgrade(targetTier);
   };
 
   return (
     <div className="glass-panel p-6 rounded-2xl border border-white/10 relative overflow-hidden">
       {isProcessing && (
-        <div className="absolute inset-0 bg-[#0a0a0c]/80 backdrop-blur-sm z-30 flex flex-col items-center justify-center space-y-4">
+        <div className="absolute inset-0 bg-[#0a0a0c]/80 backdrop-blur-sm z-30 flex flex-col items-center justify-center space-y-4 px-6 text-center">
           <div className="w-10 h-10 border-4 border-blue-600/20 border-t-blue-500 rounded-full animate-spin"></div>
-          <div className="text-center">
-            <p className="text-xs font-bold text-white uppercase tracking-widest">Generating ZK-Identity Proof</p>
-            <p className="text-[10px] text-slate-500 mono">State Migration in Progress...</p>
+          <div>
+            <p className="text-xs font-bold text-white uppercase tracking-widest">
+              {auditLog ? 'ORACLE COMPLIANCE AUDIT' : 'GENERATING ZK-PROOF'}
+            </p>
+            <p className="text-[10px] text-slate-500 mono mt-1">
+              {auditLog || 'State Migration in Progress...'}
+            </p>
           </div>
         </div>
       )}
@@ -145,7 +178,7 @@ const IdentityVerification: React.FC<IdentityVerificationProps> = ({
             : 'bg-blue-600 hover:bg-blue-500 shadow-xl shadow-blue-900/40'
           }`}
         >
-          {activeTab === IdentityTier.VERIFIED && !isDiscordLinked ? 'Verification Blocked' : 'Execute Tier Migration'}
+          {activeTab === IdentityTier.VERIFIED && !isDiscordLinked ? 'Verification Blocked' : (activeTab === IdentityTier.INSTITUTION ? 'REQUEST INSTITUTIONAL AUDIT' : 'Execute Tier Migration')}
         </button>
       ) : (
         <div className="flex items-center justify-center gap-2 p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-lg">
