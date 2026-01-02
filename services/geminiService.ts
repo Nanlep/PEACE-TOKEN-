@@ -70,6 +70,7 @@ export const validatePeaceProject = async (
 
 /**
  * Performs an AI-driven audit of institutional credentials for Level 3 (INSTITUTION) upgrades.
+ * Note: This result is a 'Pre-Approval' which must be signed by System Guardians.
  */
 export const auditInstitutionalIdentity = async (
   entityName: string,
@@ -85,7 +86,7 @@ export const auditInstitutionalIdentity = async (
       2. Compliance with international non-profit standards.
       3. Potential conflict of interest in the current geopolitical landscape.`,
       config: {
-        systemInstruction: "You are the Compliance Auditor for the Peace-Token Protocol. Evaluate institutional legitimacy. Score risk from 0 (Safe) to 100 (High Risk). Approval requires risk < 20.",
+        systemInstruction: "You are the Compliance Auditor for the Peace-Token Protocol. Evaluate institutional legitimacy. Score risk from 0 (Safe) to 100 (High Risk). Approval requires risk < 20. Your approval constitutes a 'PRE-APPROVAL' recommendation for final System Guardian review.",
         thinkingConfig: { thinkingBudget: 4000 },
         responseMimeType: "application/json",
         responseSchema: {

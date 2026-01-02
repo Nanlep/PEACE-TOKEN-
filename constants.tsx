@@ -6,20 +6,31 @@ export const COLORS = {
   SUCCESS: '#10b981',
   WARNING: '#f59e0b',
   DANGER: '#ef4444',
+  GUARDIAN: '#f59e0b', // Gold/Amber for high authority
   BG_DARK: '#0a0a0c',
   PANEL: 'rgba(255, 255, 255, 0.05)',
 };
 
 export const TOKENOMICS = {
-  TOTAL_SUPPLY: 1000000000, // Updated to 1 Billion (1B)
+  TOTAL_SUPPLY: 1000000000,
   INITIAL_PRICE_USDC: 0.19,
   ALLOCATION: {
-    REWARDS: 0.50, // 500M tokens
-    DAO: 0.40,     // 400M tokens
-    SYSTEM: 0.10,  // 100M tokens
+    REWARDS: 0.50,
+    DAO: 0.40,
+    SYSTEM: 0.10,
   },
-  TARGET_MARKET_CAP: 190000000, // 1B * 0.19 = 190M
+  TARGET_MARKET_CAP: 190000000,
 };
+
+export const GUARDIAN_REGISTRY = [
+  { id: 'GUARDIAN-ALPHA', hash: '0x82f..41e', status: 'ACTIVE', entity: 'Peace-Token Foundation' },
+  { id: 'GUARDIAN-BRAVO', hash: '0x19a..22c', status: 'ACTIVE', entity: 'Global Legal Audit Group' },
+  { id: 'GUARDIAN-CHARLIE', hash: '0xbb2..901', status: 'ACTIVE', entity: 'Consensus Systems NGO' },
+  { id: 'GUARDIAN-DELTA', hash: '0x77f..00a', status: 'ACTIVE', entity: 'UN-Affiliated Tech Lead' },
+  { id: 'GUARDIAN-ECHO', hash: '0x92d..881', status: 'ACTIVE', entity: 'Disaster Recovery SRE' },
+  { id: 'GUARDIAN-FOXTROT', hash: '0x44c..312', status: 'STANDBY', entity: 'Digital Sovereign Trust' },
+  { id: 'GUARDIAN-GOLF', hash: '0xee1..55f', status: 'ACTIVE', entity: 'Institutional Liquidity Provider' }
+];
 
 export const SYSTEM_CONFIG = {
   REWARD_MULTIPLIERS: {
@@ -44,5 +55,8 @@ export const Icons = {
   ),
   Token: () => (
     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="8"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+  ),
+  Guardian: () => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
   ),
 };

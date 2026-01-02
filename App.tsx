@@ -11,7 +11,6 @@ import ExchangeModal from './components/ExchangeModal';
 import FundingModal from './components/FundingModal';
 import UserGuideModal from './components/UserGuideModal';
 import ComplianceModal from './components/ComplianceModal';
-// Added ProjectStatus to imports
 import { PeaceProject, DAOProposal, IdentityTier, TransactionLog, SystemHealth, ProjectStatus } from './types';
 import { Icons, TOKENOMICS } from './constants';
 import { ProtocolService } from './services/protocolService';
@@ -137,7 +136,6 @@ const App: React.FC = () => {
       if (p.id === id && p.status === 'VOTING') {
         const votesFor = side === 'FOR' ? p.votesFor + 1 : p.votesFor;
         const votesAgainst = side === 'AGAINST' ? p.votesAgainst + 1 : p.votesAgainst;
-        // Fix: Explicitly type 'status' as ProjectStatus to avoid narrowing to 'VOTING'
         let status: ProjectStatus = p.status;
         if (votesFor >= 5) { status = 'VALIDATED'; addLog('VOTE', 0, 'PT', `Validated: ${id}`); }
         else if (votesAgainst >= 3) { status = 'REJECTED'; addLog('SLASH', 0, 'PT', `Rejected: ${id}`); }
@@ -222,15 +220,21 @@ const App: React.FC = () => {
           <div className="space-y-8 animate-in slide-in-from-bottom-6 duration-500">
             {/* TOP BAR / OBSERVE */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-              <div>
-                <h2 className="text-2xl font-black text-white uppercase tracking-tight">Mission Control</h2>
-                <div className="flex items-center gap-4 mt-1">
-                   <div className="flex items-center gap-1.5 text-[10px] font-mono text-emerald-400 bg-emerald-400/5 px-2 py-0.5 rounded border border-emerald-500/20">
-                      <div className="status-pulse scale-50"></div> NODE 0x..77 SYNCED
-                   </div>
-                   <div className="text-[10px] font-mono text-slate-500 uppercase tracking-widest">
-                      Latency: {health.oracleLatency}ms | Solvency: 100%
-                   </div>
+              <div className="flex items-start gap-4">
+                <div>
+                  <h2 className="text-2xl font-black text-white uppercase tracking-tight">Mission Control</h2>
+                  <div className="flex items-center gap-4 mt-1">
+                    <div className="flex items-center gap-1.5 text-[10px] font-mono text-emerald-400 bg-emerald-400/5 px-2 py-0.5 rounded border border-emerald-500/20">
+                        <div className="status-pulse scale-50"></div> NODE 0x..77 SYNCED
+                    </div>
+                    <div className="text-[10px] font-mono text-slate-500 uppercase tracking-widest">
+                        Latency: {health.oracleLatency}ms | Solvency: 100%
+                    </div>
+                  </div>
+                </div>
+                <div className="mt-1 px-3 py-1 bg-emerald-600/20 border border-emerald-500/30 rounded-full flex items-center gap-2">
+                   <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full shadow-[0_0_8px_#10b981]"></div>
+                   <span className="text-[9px] font-black text-emerald-400 uppercase tracking-widest">Production Ready</span>
                 </div>
               </div>
               <div className="flex gap-2">
