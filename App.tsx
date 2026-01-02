@@ -11,7 +11,8 @@ import ExchangeModal from './components/ExchangeModal';
 import FundingModal from './components/FundingModal';
 import UserGuideModal from './components/UserGuideModal';
 import ComplianceModal from './components/ComplianceModal';
-import { PeaceProject, DAOProposal, IdentityTier, TransactionLog, SystemHealth, ProjectStatus } from './types';
+import GuardianTerminal from './components/GuardianTerminal';
+import { PeaceProject, DAOProposal, IdentityTier, TransactionLog, SystemHealth, ProjectStatus, InstitutionalRequest } from './types';
 import { Icons, TOKENOMICS } from './constants';
 import { ProtocolService } from './services/protocolService';
 import { downloadWhitePaper } from './services/documentService';
@@ -26,11 +27,15 @@ const App: React.FC = () => {
   const [isDiscordLinked, setIsDiscordLinked] = useState(false);
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
   
+  // --- GUARDIAN STATE ---
+  const [isGuardianTerminalOpen, setIsGuardianTerminalOpen] = useState(false);
+  const [institutionalRequests, setInstitutionalRequests] = useState<InstitutionalRequest[]>([]);
+
   // --- ASSET STATE ---
   const [treasuryUSDC, setTreasuryUSDC] = useState(TOKENOMICS.TARGET_MARKET_CAP * TOKENOMICS.ALLOCATION.DAO); 
   const [totalRewardedPT, setTotalRewardedPT] = useState(0);
   const [balancePT, setBalancePT] = useState(0);
-  const [balanceUSDC, setBalanceUSDC] = useState(190.00); 
+  const [balanceUSDC, setBalanceUSDC] = useState(0.00); 
   const [ptPrice, setPtPrice] = useState(TOKENOMICS.INITIAL_PRICE_USDC);
 
   // --- OBSERVABILITY ---
@@ -87,18 +92,19 @@ const App: React.FC = () => {
         setTreasuryUSDC(data.treasuryUSDC || 76000000);
         setTotalRewardedPT(data.totalRewardedPT || 0);
         setBalancePT(data.balancePT || 0);
-        setBalanceUSDC(data.balanceUSDC || 190);
+        setBalanceUSDC(data.balanceUSDC || 0.00);
         setCurrentTier(data.currentTier || IdentityTier.UNVERIFIED);
         setIsDiscordLinked(data.isDiscordLinked || false);
         setWalletAddress(data.walletAddress || null);
+        setInstitutionalRequests(data.institutionalRequests || []);
       } catch (e) { console.error("Snapshot corruption detected. Resetting state."); }
     }
   }, []);
 
   useEffect(() => {
-    const state = { projects, logs, treasuryUSDC, totalRewardedPT, balancePT, balanceUSDC, currentTier, isDiscordLinked, walletAddress };
+    const state = { projects, logs, treasuryUSDC, totalRewardedPT, balancePT, balanceUSDC, currentTier, isDiscordLinked, walletAddress, institutionalRequests };
     localStorage.setItem(PERSISTENCE_VERSION, JSON.stringify(state));
-  }, [projects, logs, treasuryUSDC, totalRewardedPT, balancePT, balanceUSDC, currentTier, isDiscordLinked, walletAddress]);
+  }, [projects, logs, treasuryUSDC, totalRewardedPT, balancePT, balanceUSDC, currentTier, isDiscordLinked, walletAddress, institutionalRequests]);
 
   // --- LOGIC HANDLERS ---
   const addLog = (type: TransactionLog['type'], amount: number, currency: TransactionLog['currency'], metadata?: string) => {
@@ -120,6 +126,29 @@ const App: React.FC = () => {
   const handleDisconnect = () => {
     setWalletAddress(null);
     addLog('STAKE', 0, 'PT', 'Session Terminated by User');
+  };
+
+  const handleInstitutionalRequest = (req: InstitutionalRequest) => {
+    setInstitutionalRequests(prev => [...prev, req]);
+    addLog('STAKE', 0, 'PT', `Audit Request Queued: ${req.id}`);
+  };
+
+  const handleGuardianSign = (requestId: string, guardianId: string) => {
+    setInstitutionalRequests(prev => prev.map(req => {
+      if (req.id === requestId) {
+        const newSigs = req.signatures.includes(guardianId) ? req.signatures : [...req.signatures, guardianId];
+        const newStatus = newSigs.length >= 4 ? 'APPROVED' : req.status;
+        
+        if (newStatus === 'APPROVED' && req.status !== 'APPROVED') {
+           addLog('MINT', 0, 'PT', `Institutional Quorum Reached: ${req.entityName}`);
+           // In a real app, this would update the user's Tier state if matched to wallet
+           // For this simulation, we finalize the state via the verification component
+        }
+        
+        return { ...req, signatures: newSigs, status: newStatus as any };
+      }
+      return req;
+    }));
   };
 
   const handleProjectValidated = (newProject: PeaceProject) => {
@@ -234,6 +263,7 @@ const App: React.FC = () => {
                 </div>
               </div>
               <div className="flex gap-2">
+                <button onClick={() => setIsGuardianTerminalOpen(true)} className="px-4 py-2 bg-amber-600/10 text-amber-500 border border-amber-500/20 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all hover:bg-amber-500 hover:text-black">Guardian Portal</button>
                 <button onClick={() => setIsFundingOpen(true)} className="px-4 py-2 glass-panel hover:bg-emerald-600/10 hover:text-emerald-400 border-white/10 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all">Liquidity Bridge</button>
                 <button onClick={() => setIsUserGuideOpen(true)} className="px-4 py-2 glass-panel hover:bg-blue-600/10 hover:text-blue-400 border-white/10 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all">Protocol Guide</button>
                 {isArchitect && (
@@ -252,7 +282,14 @@ const App: React.FC = () => {
                 <PayoutLedger projects={projects} onPayout={handlePayout} onVote={handleProjectVote} userTier={currentTier} ptPrice={ptPrice} />
               </div>
               <div className="lg:col-span-4 space-y-8">
-                <IdentityVerification currentTier={currentTier} isDiscordLinked={isDiscordLinked} onTierUpgrade={setCurrentTier} onLinkDiscord={() => setIsDiscordLinked(true)} />
+                <IdentityVerification 
+                  currentTier={currentTier} 
+                  isDiscordLinked={isDiscordLinked} 
+                  onTierUpgrade={setCurrentTier} 
+                  onLinkDiscord={() => setIsDiscordLinked(true)} 
+                  onInstitutionalRequest={handleInstitutionalRequest}
+                  approvalStatus={institutionalRequests.find(r => r.entityName === "SIMULATED_ENTITY_01")?.status}
+                />
                 <CommunityWidget isDiscordLinked={isDiscordLinked} onLinkDiscord={() => setIsDiscordLinked(true)} />
                 <div className="glass-panel p-6 rounded-3xl border border-white/10">
                    <h3 className="text-sm font-black text-white uppercase tracking-widest mb-6 flex items-center gap-2">
@@ -278,6 +315,22 @@ const App: React.FC = () => {
       <FundingModal isOpen={isFundingOpen} onClose={() => setIsFundingOpen(false)} onFund={handleFundUSDC} />
       <UserGuideModal isOpen={isUserGuideOpen} onClose={() => setIsUserGuideOpen(false)} />
       <ComplianceModal isOpen={isComplianceOpen} onClose={() => setIsComplianceOpen(false)} treasuryUSDC={treasuryUSDC} />
+      
+      <GuardianTerminal 
+        isOpen={isGuardianTerminalOpen} 
+        onClose={() => setIsGuardianTerminalOpen(false)} 
+        pendingRequests={institutionalRequests.filter(r => r.status === 'PENDING')}
+        onSign={handleGuardianSign}
+      />
+
+      {/* Persistence Hook for Sync */}
+      <footer className="max-w-7xl mx-auto w-full px-8 py-4 flex justify-between items-center text-[9px] text-slate-600 font-mono uppercase">
+         <div>© 2025 Peace-Token Protocol | Production-Stable V4.2</div>
+         <div className="flex gap-4">
+            <span className="flex items-center gap-1"><div className="w-1 h-1 bg-emerald-500 rounded-full"></div> LEDGER SYNCED</span>
+            <span className="cursor-help hover:text-amber-500" onClick={() => setIsGuardianTerminalOpen(true)}>GUARDIAN_GATEWAY_AUTH</span>
+         </div>
+      </footer>
     </div>
   );
 };

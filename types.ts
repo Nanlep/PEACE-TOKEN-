@@ -26,6 +26,15 @@ export interface PeaceProject {
   slashedAmount?: number;
 }
 
+export interface InstitutionalRequest {
+  id: string;
+  entityName: string;
+  credentialsHash: string;
+  timestamp: number;
+  signatures: string[]; // List of Guardian IDs who signed
+  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+}
+
 export interface DAOProposal {
   id: string;
   title: string;

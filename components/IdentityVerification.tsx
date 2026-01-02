@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { IdentityTier } from '../types';
+import { IdentityTier, InstitutionalRequest } from '../types';
 import { Icons, GUARDIAN_REGISTRY } from '../constants';
 import { auditInstitutionalIdentity } from '../services/geminiService';
 
@@ -9,6 +9,8 @@ interface IdentityVerificationProps {
   isDiscordLinked: boolean;
   onTierUpgrade: (newTier: IdentityTier) => void;
   onLinkDiscord: () => void;
+  onInstitutionalRequest: (req: InstitutionalRequest) => void;
+  approvalStatus?: 'PENDING' | 'APPROVED' | 'REJECTED';
 }
 
 type VerificationStatus = 'IDLE' | 'AI_AUDIT' | 'AWAITING_GUARDIAN' | 'GUARDIAN_SIGNING' | 'FINALIZED';
@@ -23,7 +25,9 @@ const IdentityVerification: React.FC<IdentityVerificationProps> = ({
   currentTier, 
   isDiscordLinked,
   onTierUpgrade,
-  onLinkDiscord 
+  onLinkDiscord,
+  onInstitutionalRequest,
+  approvalStatus
 }) => {
   const [status, setStatus] = useState<VerificationStatus>('IDLE');
   const [activeTab, setActiveTab] = useState<IdentityTier>(currentTier);
@@ -33,6 +37,12 @@ const IdentityVerification: React.FC<IdentityVerificationProps> = ({
   const [signedCount, setSignedCount] = useState(0);
   const [signatureLogs, setSignatureLogs] = useState<SignatureEvent[]>([]);
   const videoRef = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    if (approvalStatus === 'APPROVED' && currentTier !== IdentityTier.INSTITUTION) {
+      finalizeUpgrade(IdentityTier.INSTITUTION);
+    }
+  }, [approvalStatus]);
 
   const tierMetadata = {
     [IdentityTier.UNVERIFIED]: { label: 'Level 0: Guest', req: 'Node Access', perks: 'ReadOnly Access', multiplier: '0.1x', color: 'text-slate-400' },
@@ -71,6 +81,15 @@ const IdentityVerification: React.FC<IdentityVerificationProps> = ({
 
     setTimeout(() => {
       if (result.isApproved) {
+        const newReq: InstitutionalRequest = {
+           id: 'REQ-' + Math.random().toString(36).substr(2, 6).toUpperCase(),
+           entityName: "SIMULATED_ENTITY_01",
+           credentialsHash: "0x" + Math.random().toString(16).substr(2, 32),
+           timestamp: Date.now(),
+           signatures: [],
+           status: 'PENDING'
+        };
+        onInstitutionalRequest(newReq);
         setStatus('AWAITING_GUARDIAN');
       } else {
         alert("AUDIT REJECTED: " + result.reasoning);
@@ -78,43 +97,6 @@ const IdentityVerification: React.FC<IdentityVerificationProps> = ({
         setAuditLog(null);
       }
     }, 3000);
-  };
-
-  const executeGuardianApproval = () => {
-    setStatus('GUARDIAN_SIGNING');
-    setGuardianProgress(0);
-    setSignedCount(0);
-    setSignatureLogs([]);
-    
-    let lastSignedIndex = -1;
-    
-    const interval = setInterval(() => {
-      setGuardianProgress(prev => {
-        const next = prev + 2; // Slower, more deliberate signing
-        const currentQuota = Math.floor((next / 100) * 7);
-        
-        if (currentQuota > lastSignedIndex && currentQuota < 7) {
-          lastSignedIndex = currentQuota;
-          const guardian = GUARDIAN_REGISTRY[currentQuota];
-          setSignatureLogs(prevLogs => [
-            { 
-              guardianId: guardian.id, 
-              hash: `0x${Math.random().toString(16).substr(2, 12)}...`, 
-              timestamp: Date.now() 
-            },
-            ...prevLogs
-          ]);
-          setSignedCount(currentQuota + 1);
-        }
-        
-        if (next >= 100) {
-          clearInterval(interval);
-          setTimeout(() => finalizeUpgrade(IdentityTier.INSTITUTION), 1000);
-          return 100;
-        }
-        return next;
-      });
-    }, 80);
   };
 
   const finalizeUpgrade = (targetTier: IdentityTier) => {
@@ -206,66 +188,28 @@ const IdentityVerification: React.FC<IdentityVerificationProps> = ({
         ))}
       </div>
 
-      {status === 'AWAITING_GUARDIAN' || status === 'GUARDIAN_SIGNING' ? (
+      {status === 'AWAITING_GUARDIAN' ? (
         <div className="space-y-6 animate-in zoom-in-95 duration-300">
            <div className="p-4 bg-amber-500/10 border border-amber-500/20 rounded-xl space-y-3">
               <div className="flex items-center gap-2">
                  <div className="w-2 h-2 bg-amber-500 rounded-full animate-pulse"></div>
-                 <h4 className="text-[10px] font-black text-amber-500 uppercase tracking-widest">Guardian Quorum Required</h4>
+                 <h4 className="text-[10px] font-black text-amber-500 uppercase tracking-widest">Quorum Protocol Active</h4>
               </div>
               <p className="text-[10px] text-slate-400 leading-relaxed italic">
-                Oracle Pre-Approval: <span className="text-emerald-400 font-bold">PASSED</span>. Multisig convergence requires 4-of-7 verified Guardian attestations.
+                AI Audit: <span className="text-emerald-400 font-bold">PASSED</span>. Request has been broadcast to the Guardian Network. Awaiting 4 unique cryptographic attestations to proceed.
               </p>
-              
-              <div className="grid grid-cols-7 gap-1 pt-2">
-                {GUARDIAN_REGISTRY.map((g, i) => (
-                  <div 
-                    key={i} 
-                    className={`h-1.5 rounded-full transition-all duration-300 ${
-                      i < signedCount ? 'bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.6)]' : 'bg-slate-800'
-                    }`}
-                  ></div>
-                ))}
+              <div className="p-3 bg-black/40 rounded-lg border border-amber-500/10 flex items-center justify-center">
+                 <p className="text-[9px] text-amber-500 font-mono uppercase animate-pulse">Awaiting Guardian Broadcast...</p>
               </div>
-
-              {status === 'GUARDIAN_SIGNING' && (
-                <div className="space-y-3 pt-2">
-                   <div className="flex justify-between text-[8px] font-mono text-amber-500 uppercase">
-                      <span>Signatures: {signedCount} / 4 Required</span>
-                      <span>Progress: {Math.min(guardianProgress, 100)}%</span>
-                   </div>
-                   
-                   {/* REAL-TIME SIGNATURE LOG */}
-                   <div className="h-24 bg-black/40 rounded-lg border border-amber-500/20 overflow-y-auto p-2 space-y-1 custom-scrollbar">
-                      {signatureLogs.length === 0 ? (
-                        <p className="text-[8px] text-slate-600 uppercase font-mono animate-pulse">Awaiting first attestor...</p>
-                      ) : (
-                        signatureLogs.map((log, i) => (
-                          <div key={i} className="flex justify-between items-center text-[7px] font-mono animate-in slide-in-from-left-2">
-                            <span className="text-amber-500">[{log.guardianId}] SIGNED</span>
-                            <span className="text-slate-500">{log.hash}</span>
-                          </div>
-                        ))
-                      )}
-                   </div>
-
-                   <div className="h-1 w-full bg-slate-800 rounded-full overflow-hidden">
-                      <div className="h-full bg-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.5)] transition-all duration-150" style={{ width: `${guardianProgress}%` }}></div>
-                   </div>
-                </div>
-              )}
            </div>
-
-           <button
-             disabled={status === 'GUARDIAN_SIGNING'}
-             onClick={executeGuardianApproval}
-             className="w-full py-4 bg-amber-600 hover:bg-amber-500 text-white text-[11px] font-black uppercase tracking-[0.2em] rounded-xl transition-all shadow-xl shadow-amber-900/40 disabled:opacity-50 flex items-center justify-center gap-2"
-           >
-             {status === 'GUARDIAN_SIGNING' ? 'Converging Multi-Sig...' : 'Initialize Guardian Signing'}
-           </button>
-
            <button 
-             onClick={() => { setStatus('IDLE'); setAuditLog(null); setSignatureLogs([]); }}
+             disabled 
+             className="w-full py-4 bg-slate-800 text-slate-500 text-[11px] font-black uppercase tracking-[0.2em] rounded-xl cursor-wait"
+           >
+             Protocol Locked: Pending Quorum
+           </button>
+           <button 
+             onClick={() => { setStatus('IDLE'); setAuditLog(null); }}
              className="w-full text-[9px] font-bold text-slate-500 uppercase hover:text-slate-400 transition-colors"
            >
              Cancel Institutional Audit
