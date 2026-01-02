@@ -232,10 +232,6 @@ const App: React.FC = () => {
                     </div>
                   </div>
                 </div>
-                <div className="mt-1 px-3 py-1 bg-emerald-600/20 border border-emerald-500/30 rounded-full flex items-center gap-2">
-                   <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full shadow-[0_0_8px_#10b981]"></div>
-                   <span className="text-[9px] font-black text-emerald-400 uppercase tracking-widest">Production Ready</span>
-                </div>
               </div>
               <div className="flex gap-2">
                 <button onClick={() => setIsFundingOpen(true)} className="px-4 py-2 glass-panel hover:bg-emerald-600/10 hover:text-emerald-400 border-white/10 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all">Liquidity Bridge</button>
