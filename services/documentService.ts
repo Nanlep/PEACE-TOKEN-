@@ -2,6 +2,7 @@
 /**
  * Peace-Token Protocol White-paper Generator
  * Version: 4.2.0-PROD
+ * Updated: 2025-05-24
  */
 
 export const generateWhitePaperContent = () => {
@@ -10,41 +11,58 @@ export const generateWhitePaperContent = () => {
 ## Version: 4.2.0-STABLE | Mission-Critical Governance Infrastructure
 
 ### 1. ABSTRACT
-The Peace-Token Protocol is a decentralized mission-critical platform designed to incentivize and verify global conflict resolution and peace-building efforts. By utilizing advanced reasoning-based AI Oracles and Soulbound Identity Tokens (SBTs), the protocol converts social impact into liquid assets (PT/USDC), establishing a sustainable professional career path for peace actors.
+The Peace-Token Protocol is a decentralized, production-grade financial infrastructure built to incentivize and verify global conflict resolution. By merging advanced reasoning-based AI Oracles with a Soulbound Identity (SBT) framework, the protocol creates a professional "Economy of Peace" where social impact is a liquid and auditable asset.
 
 ### 2. CORE ARCHITECTURE
-#### 2.1 The AI Oracle (Proof-of-Peace)
-Unlike traditional philanthropic models, Peace-Token employs a high-thinking budget Gemini 3 Pro reasoning engine. This Oracle acts as a Chief Validation Officer (CVO), skeptically auditing impact evidence hashes to ensure authenticity, non-violence alignment, and measurable conflict reduction.
+#### 2.1 The AI Oracle (Proof-of-Impact)
+Impact verification is managed by a high-thinking budget Gemini 3 Pro reasoning engine.
+- **Thinking Budget:** 4,000 tokens per audit to ensure adversarial skepticism.
+- **Function:** Analyzes evidence hashes for non-violence alignment and measurable outcome metrics.
+- **Output:** Assigns a deterministic Impact Score (0-100) and base reward.
 
-#### 2.2 Layered Identity Model
-Reputation is managed via non-transferable Soulbound Tokens:
-- **Level 1 (Verified):** Social cross-check via Discord.
-- **Level 2 (Expert):** Biometric liveness scanning for Sybil resistance.
-- **Level 3 (Institution):** Deep AI-driven institutional compliance audits.
+#### 2.2 Layered Identity Model (Soulbound Tokens)
+The protocol enforces a zero-trust identity hierarchy through non-transferable SBTs:
+- **Level 0 (Observer):** Unverified node. Read-only access to the global ledger.
+- **Level 1 (Verified Actor):** Social cross-check via Discord. Enables impact evidence publishing.
+- **Level 2 (Expert Mediator):** Biometric liveness check + 1,000 PT Stake. Unlocks DAO voting and 2.5x rewards.
+- **Level 3 (Strategic Institution):** 4-of-7 Guardian Quorum audit. Enables treasury grant creation and 5.0x rewards.
 
-### 3. TOKENOMICS & LIQUIDITY
-The PT (Peace-Token) serves as the protocol's primary reward asset. 
-- **Minting:** Rewards are minted upon AI-verified impact validation.
-- **Liquidity:** An integrated Automated Market Maker (AMM) pairs PT with USDC, allowing verified actors to extract value based on real-time market liquidity and treasury reserves.
-- **Fees:** A 0.1% protocol fee is levied on all swaps to sustain the Treasury.
-- **Total Supply:** Capped at 1,000,000,000 (1 Billion) PEACE.
+### 3. THE PAYOUT LIFECYCLE
+The protocol utilizes a mission-critical 5-phase disbursement engine:
+1. **Oracle Audit:** AI assigns impact scores and suggests base rewards.
+2. **Expert Consensus:** Level 2/3 actors must reach a 5-vote quorum to validate evidence.
+3. **Disbursement:** Validated actors claim minted PT, applying their tier-based multipliers.
+4. **Liquidation:** PT is swapped for USDC via the Protocol-Native AMM (0.1% fee).
+5. **Exit Bridge:** USDC capital is withdrawn via the Capital Bridge to external accounts.
 
-### 4. GOVERNANCE (DAO)
-The protocol is governed by its verified actors. Decisions regarding Treasury disbursements (PIP-Treasury) and protocol upgrades (PIP-Technical) are managed through quadratic-weighted voting, ensuring that power remains with those who provide the most impact, not just the most capital.
+### 4. TOKENOMICS & TREASURY
+The PT (Peace-Token) is the primary incentive vehicle.
+- **Total Supply:** 1,000,000,000 (1 Billion) PEACE, hard-capped.
+- **Allocation:**
+  - 50% Reward Pool (Impact Incentives)
+  - 40% DAO Treasury (Strategic Grants & Liquidity)
+  - 10% Infrastructure (Guardian Nodes & SRE)
+- **Solvency:** A 5% "Deep Cold Reserve" is maintained to ensure exit-liquidity for all verified actors.
 
-### 5. SECURITY & RELIABILITY
-#### 5.1 Panic Revert (Circuit Breaker)
-In the event of anomalous activity or treasury volatility exceeding 15% hourly, the Systems Architect can engage a global circuit breaker, halting all state transitions to protect community assets.
+### 5. GOVERNANCE (DAO)
+The protocol is governed by its stakeholders via Peace Improvement Proposals (PIPs).
+- **Voting Mechanism:** Quadratic Voting is used to balance token weight against intensity of belief.
+- **Proposal Gating:** Only Level 2+ actors may initiate PIPs, requiring a 500 PT deposit.
+- **Slashing Mechanism:** Fraudulent validation or malicious proposals result in the immediate burning (slashing) of the actor's staked tokens.
 
-#### 5.2 Deterministic Ledger
-Every transaction is logged with a unique 256-bit hash, ensuring a 7-year audit capability for institutional and legal defense.
+### 6. SECURITY & RELIABILITY
+#### 6.1 Panic Revert (Circuit Breaker)
+System Guardians maintain a 4-of-7 multisig "Circuit Breaker" capable of halting all protocol state transitions in the event of detected anomalies or treasury volatility.
 
-### 6. CONCLUSION
-Peace-Token Protocol establishes a new global standard for the "Economy of Peace," providing a rigorous, transparent, and financially viable framework for the world's most critical work.
+#### 6.2 Deterministic Auditing
+Every action (mint, vote, swap) is signed with a unique 256-bit hash, creating an immutable audit trail for legal and institutional compliance.
+
+### 7. CONCLUSION
+Peace-Token Protocol provides the first scientifically rigorous and financially viable framework for the most critical work on Earth. It is not just a ledger; it is a global consensus on human stability.
 
 ---
 © 2025 Peace-Token Foundation. All rights reserved.
-DEPROYED-STABLE INFRASTRUCTURE.
+INFRASTRUCTURE STATUS: PRODUCTION-READY
 `;
 };
 
