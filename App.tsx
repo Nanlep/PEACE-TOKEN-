@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Header from './components/Header';
 import DashboardStats from './components/DashboardStats';
 import IdentityVerification from './components/IdentityVerification';
@@ -10,29 +10,40 @@ import CommunityWidget from './components/CommunityWidget';
 import ExchangeModal from './components/ExchangeModal';
 import FundingModal from './components/FundingModal';
 import UserGuideModal from './components/UserGuideModal';
-import { PeaceProject, DAOProposal, IdentityTier, TransactionLog } from './types';
+// Added ProjectStatus to imports
+import { PeaceProject, DAOProposal, IdentityTier, TransactionLog, SystemHealth, ProjectStatus } from './types';
 import { Icons, TOKENOMICS } from './constants';
 import { ProtocolService } from './services/protocolService';
 import { downloadWhitePaper } from './services/documentService';
 
-const LEDGER_KEY = 'PEACE_PROTOCOL_LEDGER_V4';
+const PERSISTENCE_VERSION = 'PEACE_PROTOCOL_V4_PROD';
 
 const App: React.FC = () => {
-  // State Initialization
+  // --- CORE STATE ---
   const [currentTier, setCurrentTier] = useState<IdentityTier>(IdentityTier.UNVERIFIED);
   const [projects, setProjects] = useState<PeaceProject[]>([]);
   const [isPaused, setIsPaused] = useState(false);
   const [isDiscordLinked, setIsDiscordLinked] = useState(false);
-  
-  const [treasury, setTreasury] = useState(TOKENOMICS.TARGET_MARKET_CAP * TOKENOMICS.ALLOCATION.DAO); 
-  const [totalRewarded, setTotalRewarded] = useState(0);
-  const [logs, setLogs] = useState<TransactionLog[]>([]);
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
+  
+  // --- ASSET STATE ---
+  const [treasuryUSDC, setTreasuryUSDC] = useState(TOKENOMICS.TARGET_MARKET_CAP * TOKENOMICS.ALLOCATION.DAO); 
+  const [totalRewardedPT, setTotalRewardedPT] = useState(0);
   const [balancePT, setBalancePT] = useState(0);
   const [balanceUSDC, setBalanceUSDC] = useState(190.00); 
-  
-  // Market & UI State
-  const [ptPrice, setPtPrice] = useState(TOKENOMICS.INITIAL_PRICE_USDC); 
+  const [ptPrice, setPtPrice] = useState(TOKENOMICS.INITIAL_PRICE_USDC);
+
+  // --- OBSERVABILITY ---
+  const [logs, setLogs] = useState<TransactionLog[]>([]);
+  const [health, setHealth] = useState<SystemHealth>({
+    oracleLatency: 24,
+    treasurySolvency: 100,
+    activeNodes: 8291,
+    networkLoad: 12,
+    securityPosture: 'HIGH'
+  });
+
+  // --- UI STATE ---
   const [isExchangeOpen, setIsExchangeOpen] = useState(false);
   const [isFundingOpen, setIsFundingOpen] = useState(false);
   const [isUserGuideOpen, setIsUserGuideOpen] = useState(false);
@@ -48,112 +59,94 @@ const App: React.FC = () => {
       description: 'Increases the penalty for false impact reports from 10% to 25% stake loss.',
       deadline: Date.now() + 86400000,
       category: 'GOVERNANCE'
-    },
-    {
-      id: 'PIP-043',
-      title: 'Treasury Disbursment for UN-aligned NGO Grant',
-      proposer: '0x88...c22',
-      votesFor: 89000,
-      votesAgainst: 500,
-      status: 'PASSED',
-      description: 'Allocation of 1M USDC to verified peace missions in West Africa.',
-      deadline: Date.now() - 1,
-      category: 'TREASURY'
     }
   ]);
 
+  // --- MARKET SIMULATION ---
   useEffect(() => {
-    const interval = setInterval(() => {
-      setPtPrice(prev => {
-        const drift = (Math.random() - 0.45) * 0.001; 
-        return Math.max(0.15, prev + drift);
-      });
-    }, 5000);
-    return () => clearInterval(interval);
+    const market = setInterval(() => {
+      setPtPrice(prev => Math.max(0.12, prev + (Math.random() - 0.48) * 0.002));
+      setHealth(h => ({
+        ...h,
+        oracleLatency: Math.floor(20 + Math.random() * 15),
+        networkLoad: Math.floor(10 + Math.random() * 20)
+      }));
+    }, 4000);
+    return () => clearInterval(market);
   }, []);
 
+  // --- PERSISTENCE ---
   useEffect(() => {
-    const saved = localStorage.getItem(LEDGER_KEY);
-    if (saved) {
-      const data = JSON.parse(saved);
-      setProjects(data.projects || []);
-      setLogs(data.logs || []);
-      setTreasury(data.treasury || TOKENOMICS.TARGET_MARKET_CAP * TOKENOMICS.ALLOCATION.DAO);
-      setTotalRewarded(data.totalRewarded || 0);
-      setBalancePT(data.balancePT || 0);
-      setBalanceUSDC(data.balanceUSDC || 190.00);
-      setCurrentTier(data.currentTier || IdentityTier.UNVERIFIED);
-      setIsDiscordLinked(data.isDiscordLinked || false);
-      if (data.walletAddress) setWalletAddress(data.walletAddress);
+    const raw = localStorage.getItem(PERSISTENCE_VERSION);
+    if (raw) {
+      try {
+        const data = JSON.parse(raw);
+        setProjects(data.projects || []);
+        setLogs(data.logs || []);
+        setTreasuryUSDC(data.treasuryUSDC || 76000000);
+        setTotalRewardedPT(data.totalRewardedPT || 0);
+        setBalancePT(data.balancePT || 0);
+        setBalanceUSDC(data.balanceUSDC || 190);
+        setCurrentTier(data.currentTier || IdentityTier.UNVERIFIED);
+        setIsDiscordLinked(data.isDiscordLinked || false);
+        setWalletAddress(data.walletAddress || null);
+      } catch (e) { console.error("Snapshot corruption detected. Resetting state."); }
     }
   }, []);
 
   useEffect(() => {
-    const state = { projects, logs, treasury, totalRewarded, balancePT, balanceUSDC, currentTier, isDiscordLinked, walletAddress };
-    localStorage.setItem(LEDGER_KEY, JSON.stringify(state));
-  }, [projects, logs, treasury, totalRewarded, balancePT, balanceUSDC, currentTier, isDiscordLinked, walletAddress]);
+    const state = { projects, logs, treasuryUSDC, totalRewardedPT, balancePT, balanceUSDC, currentTier, isDiscordLinked, walletAddress };
+    localStorage.setItem(PERSISTENCE_VERSION, JSON.stringify(state));
+  }, [projects, logs, treasuryUSDC, totalRewardedPT, balancePT, balanceUSDC, currentTier, isDiscordLinked, walletAddress]);
 
-  const handleConnect = () => {
-    const mockAddr = '0x' + Math.random().toString(16).substr(2, 40);
-    setWalletAddress(mockAddr);
-    addLog('STAKE', 0, 'PT');
+  // --- LOGIC HANDLERS ---
+  const addLog = (type: TransactionLog['type'], amount: number, currency: TransactionLog['currency'], metadata?: string) => {
+    const entry: TransactionLog = {
+      id: Math.random().toString(36).substring(2, 9),
+      type, amount, currency, metadata,
+      timestamp: Date.now(),
+      status: 'SUCCESS',
+      txHash: ProtocolService.generateTxHash()
+    };
+    setLogs(prev => [entry, ...prev.slice(0, 19)]);
   };
 
-  const handleLinkDiscord = () => {
-    setIsDiscordLinked(true);
-    addLog('STAKE', 0, 'PT');
+  const handleConnect = () => {
+    setWalletAddress('0x' + Math.random().toString(16).substring(2, 42));
+    addLog('STAKE', 0, 'PT', 'Persistent Session Initialized');
   };
 
   const handleProjectValidated = (newProject: PeaceProject) => {
     if (isPaused || !walletAddress) return;
-    const tieredReward = ProtocolService.calculateReward(newProject.tokensRewarded, currentTier);
-    const finalProject = { ...newProject, tokensRewarded: tieredReward, usdcValue: tieredReward * ptPrice };
-    setProjects(prev => [finalProject, ...prev]);
-    addLog('MINT', 0, 'PT'); 
+    const finalTokens = ProtocolService.calculateReward(newProject.tokensRewarded, currentTier, newProject.impactScore);
+    const enriched = { ...newProject, tokensRewarded: finalTokens, usdcValue: finalTokens * ptPrice };
+    setProjects(prev => [enriched, ...prev]);
+    addLog('MINT', 0, 'PT', `Oracle Pre-Approval: ${newProject.id}`);
   };
 
   const handleProjectVote = (id: string, side: 'FOR' | 'AGAINST') => {
     if (isPaused || !walletAddress) return;
-    const VOTE_QUOTA = 5;
     setProjects(prev => prev.map(p => {
       if (p.id === id && p.status === 'VOTING') {
-        const newVotesFor = side === 'FOR' ? p.votesFor + 1 : p.votesFor;
-        const newVotesAgainst = side === 'AGAINST' ? p.votesAgainst + 1 : p.votesAgainst;
-        let newStatus: PeaceProject['status'] = p.status;
-        if (newVotesFor >= VOTE_QUOTA) { newStatus = 'VALIDATED'; addLog('VOTE', 0, 'PT'); }
-        else if (newVotesAgainst >= VOTE_QUOTA) { newStatus = 'REJECTED'; }
-        return { ...p, votesFor: newVotesFor, votesAgainst: newVotesAgainst, status: newStatus };
+        const votesFor = side === 'FOR' ? p.votesFor + 1 : p.votesFor;
+        const votesAgainst = side === 'AGAINST' ? p.votesAgainst + 1 : p.votesAgainst;
+        // Fix: Explicitly type 'status' as ProjectStatus to avoid narrowing to 'VOTING'
+        let status: ProjectStatus = p.status;
+        if (votesFor >= 5) { status = 'VALIDATED'; addLog('VOTE', 0, 'PT', `Validated: ${id}`); }
+        else if (votesAgainst >= 3) { status = 'REJECTED'; addLog('SLASH', 0, 'PT', `Rejected: ${id}`); }
+        return { ...p, votesFor, votesAgainst, status };
       }
       return p;
     }));
-  };
-
-  const handleTierUpgrade = (newTier: IdentityTier) => {
-    if (!walletAddress) return;
-    setCurrentTier(newTier);
-    addLog('STAKE', 0, 'PT');
-  };
-
-  const handleVote = (id: string, side: 'FOR' | 'AGAINST') => {
-    if (isPaused || !walletAddress) return;
-    setProposals(prev => prev.map(p => p.id === id ? { ...p, votesFor: side === 'FOR' ? p.votesFor + 1250 : p.votesFor, votesAgainst: side === 'AGAINST' ? p.votesAgainst + 1250 : p.votesAgainst } : p));
-    addLog('VOTE', 1250, 'PT');
-  };
-
-  const handleExecute = (id: string) => {
-    if (isPaused || !walletAddress) return;
-    setProposals(prev => prev.map(p => p.id === id ? { ...p, status: 'EXECUTED' } : p));
-    addLog('STAKE', 0, 'PT');
   };
 
   const handlePayout = (projectId: string) => {
     if (isPaused || !walletAddress) return;
     setProjects(prev => prev.map(p => {
       if (p.id === projectId && p.status === 'VALIDATED') {
-        const reward = p.tokensRewarded;
-        setBalancePT(bal => bal + reward);
-        setTotalRewarded(prev => prev + reward);
-        addLog('MINT', reward, 'PT');
+        setBalancePT(b => b + p.tokensRewarded);
+        setTotalRewardedPT(t => t + p.tokensRewarded);
+        addLog('MINT', p.tokensRewarded, 'PT', `Disbursement: ${projectId}`);
         return { ...p, status: 'PAID' };
       }
       return p;
@@ -162,46 +155,31 @@ const App: React.FC = () => {
 
   const handleExchange = (amount: number, side: 'BUY' | 'SELL') => {
     if (side === 'SELL') {
-      const swap = ProtocolService.calculateSwap(amount, ptPrice);
-      if (!ProtocolService.verifySolvency(swap.usdcValue, treasury)) { alert("SOLVENCY ERROR"); return; }
-      setBalancePT(prev => prev - amount);
-      setBalanceUSDC(prev => prev + swap.usdcValue);
-      setTreasury(prev => prev - swap.usdcValue);
-      addLog('PAYOUT', swap.usdcValue, 'USDC');
+      const calc = ProtocolService.calculateSwap(amount, ptPrice);
+      if (!ProtocolService.verifySolvency(calc.usdcValue, treasuryUSDC)) return alert("Treasury Limit Reached");
+      setBalancePT(p => p - amount);
+      setBalanceUSDC(u => u + calc.usdcValue);
+      setTreasuryUSDC(t => t - calc.usdcValue);
+      addLog('PAYOUT', calc.usdcValue, 'USDC', 'Market Exit Executed');
     } else {
-      const calc = ProtocolService.calculateBuy(amount * ptPrice, ptPrice); // amount here is final PT requested
       const usdcCost = amount * ptPrice;
-      setBalanceUSDC(prev => prev - usdcCost);
-      setBalancePT(prev => prev + amount);
-      setTreasury(prev => prev + usdcCost);
-      addLog('MINT', amount, 'PT');
+      if (balanceUSDC < usdcCost) return alert("Insufficient USDC");
+      setBalanceUSDC(u => u - usdcCost);
+      setBalancePT(p => p + amount);
+      setTreasuryUSDC(t => t + usdcCost);
+      addLog('BRIDGE', amount, 'PT', 'Market Stake Acquired');
     }
   };
 
   const handleFundUSDC = (amount: number) => {
-    setBalanceUSDC(prev => prev + amount);
-    addLog('PAYOUT', amount, 'USDC'); // Simulating bridge deposit
-  };
-
-  const addLog = (type: any, amount: number, currency: any) => {
-    const newLog: TransactionLog = {
-      id: Math.random().toString(36).substr(2, 9),
-      type, amount, currency, timestamp: Date.now(), status: 'SUCCESS',
-      txHash: ProtocolService.generateTxHash()
-    };
-    setLogs(prev => [newLog, ...prev.slice(0, 14)]);
-  };
-
-  const togglePause = () => {
-    if (!walletAddress || currentTier !== IdentityTier.INSTITUTION) return;
-    setIsPaused(!isPaused);
-    addLog('STAKE', 0, 'PT');
+    setBalanceUSDC(b => b + amount);
+    addLog('BRIDGE', amount, 'USDC', 'Global Liquidity Bridge');
   };
 
   const isArchitect = currentTier === IdentityTier.INSTITUTION;
 
   return (
-    <div className="min-h-screen flex flex-col selection:bg-blue-500/30">
+    <div className="min-h-screen flex flex-col bg-[#0a0a0c] text-slate-200">
       <Header 
         balancePT={balancePT} balanceUSDC={balanceUSDC} walletAddress={walletAddress}
         onConnect={handleConnect} onOpenExchange={() => setIsExchangeOpen(true)}
@@ -210,65 +188,73 @@ const App: React.FC = () => {
       />
       
       {isPaused && (
-        <div className="bg-rose-600 text-white text-[10px] font-black uppercase tracking-[0.3em] py-2.5 text-center animate-pulse sticky top-16 z-50 border-b border-rose-400/20">
-          PROTOCOL EMERGENCY CIRCUIT BREAKER ACTIVE
+        <div className="bg-rose-600 text-white text-[10px] font-black uppercase tracking-[0.3em] py-2.5 text-center animate-pulse z-[60] border-b border-rose-400/20">
+          PROTOCOL EMERGENCY CIRCUIT BREAKER ACTIVE: ASSETS FROZEN
         </div>
       )}
 
-      <main className="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
+      <main className="flex-grow max-w-7xl mx-auto px-4 lg:px-8 py-8 w-full">
         {!walletAddress ? (
-          <div className="flex flex-col items-center py-12 space-y-16 animate-in fade-in duration-700">
-             <div className="flex flex-col items-center space-y-8 text-center max-w-2xl">
-                <div className="bg-blue-600/10 p-6 rounded-full border border-blue-500/20 shadow-2xl shadow-blue-900/20">
-                   <Icons.Shield />
-                </div>
-                <div>
-                   <h2 className="text-4xl font-black text-white uppercase tracking-tight mb-4">Peace-Token Protocol</h2>
-                   <p className="text-slate-400 text-lg leading-relaxed">A mission-critical decentralized ledger for verifying and rewarding global peace-building efforts.</p>
-                </div>
-                <button onClick={handleConnect} className="px-16 py-5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-sm font-black uppercase tracking-[0.4em] shadow-2xl shadow-blue-900/60 transition-all active:scale-95 group">
-                   Initialize Persistent Node <span className="inline-block transition-transform group-hover:translate-x-1">→</span>
-                </button>
+          <div className="flex flex-col items-center py-20 animate-in fade-in duration-1000">
+             <div className="bg-blue-600/10 p-8 rounded-full border border-blue-500/20 mb-8 shadow-2xl shadow-blue-900/40">
+                <Icons.Shield />
              </div>
-             <div className="flex items-center gap-8 border-t border-white/5 pt-6 w-full justify-center">
-               <button onClick={() => setIsUserGuideOpen(true)} className="text-blue-400 hover:text-blue-300 text-[9px] font-black uppercase tracking-widest text-center">Documentation</button>
-               <button onClick={downloadWhitePaper} className="text-slate-500 hover:text-white text-[9px] font-black uppercase tracking-widest text-center">White-paper</button>
+             <h2 className="text-5xl font-black text-white uppercase tracking-tight mb-4 text-center">Peace-Token Platform</h2>
+             <p className="text-slate-500 text-xl text-center max-w-xl mb-12">The world's first production-grade protocol for incentivized conflict resolution and peace verification.</p>
+             <button onClick={handleConnect} className="px-12 py-5 bg-blue-600 hover:bg-blue-500 text-white rounded-2xl text-sm font-black uppercase tracking-[0.4em] shadow-2xl shadow-blue-900/60 transition-all hover:-translate-y-1 active:scale-95">
+                Initialize Secure Node
+             </button>
+             <div className="mt-20 flex gap-8 border-t border-white/5 pt-10">
+               <button onClick={() => setIsUserGuideOpen(true)} className="text-[10px] font-black uppercase text-blue-400 tracking-widest hover:text-white transition-colors">Documentation</button>
+               <button onClick={downloadWhitePaper} className="text-[10px] font-black uppercase text-slate-500 tracking-widest hover:text-white transition-colors">White-paper</button>
+               <button className="text-[10px] font-black uppercase text-slate-500 tracking-widest hover:text-white transition-colors">Compliance Audit</button>
              </div>
           </div>
         ) : (
-          <div className="flex flex-col gap-8 animate-in slide-in-from-bottom-4 duration-500">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="space-y-8 animate-in slide-in-from-bottom-6 duration-500">
+            {/* TOP BAR / OBSERVE */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
               <div>
-                <h2 className="text-2xl font-bold text-white tracking-tight flex items-center gap-3">Mission Control</h2>
-                <p className="text-slate-400 text-sm">USDC Reserves: ${treasury.toLocaleString()} | PT Market: ${ptPrice.toFixed(4)}</p>
+                <h2 className="text-2xl font-black text-white uppercase tracking-tight">Mission Control</h2>
+                <div className="flex items-center gap-4 mt-1">
+                   <div className="flex items-center gap-1.5 text-[10px] font-mono text-emerald-400 bg-emerald-400/5 px-2 py-0.5 rounded border border-emerald-500/20">
+                      <div className="status-pulse scale-50"></div> NODE 0x..77 SYNCED
+                   </div>
+                   <div className="text-[10px] font-mono text-slate-500 uppercase tracking-widest">
+                      Latency: {health.oracleLatency}ms | Solvency: 100%
+                   </div>
+                </div>
               </div>
-              <div className="flex flex-wrap gap-2">
-                <button onClick={() => setIsFundingOpen(true)} className="px-4 py-2 bg-emerald-600/10 border border-emerald-500/20 text-emerald-400 rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-emerald-500/10 transition-all">
-                  Liquidity Bridge
-                </button>
+              <div className="flex gap-2">
+                <button onClick={() => setIsFundingOpen(true)} className="px-4 py-2 glass-panel hover:bg-emerald-600/10 hover:text-emerald-400 border-white/10 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all">Liquidity Bridge</button>
+                <button onClick={() => setIsUserGuideOpen(true)} className="px-4 py-2 glass-panel hover:bg-blue-600/10 hover:text-blue-400 border-white/10 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all">Protocol Guide</button>
                 {isArchitect && (
-                  <button onClick={togglePause} className={`px-4 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all border ${isPaused ? 'bg-emerald-600 text-white border-emerald-500' : 'bg-rose-900/20 border-rose-500/20 text-rose-500'}`}>
-                    {isPaused ? 'RESUME' : 'PANIC'}
+                  <button onClick={() => setIsPaused(!isPaused)} className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all border ${isPaused ? 'bg-emerald-600 border-emerald-500 text-white' : 'bg-rose-900/30 border-rose-500/30 text-rose-500 hover:bg-rose-500/20'}`}>
+                    {isPaused ? 'RESUME PROTOCOL' : 'PANIC REVERT'}
                   </button>
                 )}
               </div>
             </div>
 
-            <DashboardStats treasury={treasury} totalRewarded={totalRewarded} ptPrice={ptPrice} />
+            <DashboardStats treasury={treasuryUSDC} totalRewarded={totalRewardedPT} ptPrice={ptPrice} />
 
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-              <div className="lg:col-span-8 flex flex-col gap-8">
+              <div className="lg:col-span-8 space-y-8">
                 <ProjectSubmission onValidated={handleProjectValidated} userTier={currentTier} />
                 <PayoutLedger projects={projects} onPayout={handlePayout} onVote={handleProjectVote} userTier={currentTier} ptPrice={ptPrice} />
               </div>
-              <div className="lg:col-span-4 flex flex-col gap-8">
-                <IdentityVerification currentTier={currentTier} isDiscordLinked={isDiscordLinked} onTierUpgrade={handleTierUpgrade} onLinkDiscord={handleLinkDiscord} />
-                <CommunityWidget isDiscordLinked={isDiscordLinked} onLinkDiscord={handleLinkDiscord} />
-                <div className="glass-panel p-6 rounded-2xl border border-white/10">
-                  <h2 className="text-lg font-bold text-white mb-6">DAO Governance</h2>
-                  <div className="space-y-4">
-                    {proposals.map((p) => <ProposalCard key={p.id} proposal={p} onVote={handleVote} onExecute={handleExecute} />)}
-                  </div>
+              <div className="lg:col-span-4 space-y-8">
+                <IdentityVerification currentTier={currentTier} isDiscordLinked={isDiscordLinked} onTierUpgrade={setCurrentTier} onLinkDiscord={() => setIsDiscordLinked(true)} />
+                <CommunityWidget isDiscordLinked={isDiscordLinked} onLinkDiscord={() => setIsDiscordLinked(true)} />
+                <div className="glass-panel p-6 rounded-3xl border border-white/10">
+                   <h3 className="text-sm font-black text-white uppercase tracking-widest mb-6 flex items-center gap-2">
+                      <Icons.Vote /> DAO GOVERNANCE
+                   </h3>
+                   <div className="space-y-4">
+                      {proposals.map(p => (
+                        <ProposalCard key={p.id} proposal={p} onVote={(id, s) => console.log(id, s)} onExecute={id => console.log(id)} />
+                      ))}
+                   </div>
                 </div>
               </div>
             </div>

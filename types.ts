@@ -6,6 +6,8 @@ export enum IdentityTier {
   INSTITUTION = 'INSTITUTION'
 }
 
+export type ProjectStatus = 'PENDING' | 'VOTING' | 'VALIDATED' | 'REJECTED' | 'PAID' | 'SLASHED';
+
 export interface PeaceProject {
   id: string;
   title: string;
@@ -13,14 +15,15 @@ export interface PeaceProject {
   author: string;
   tier: IdentityTier;
   impactScore: number;
-  status: 'PENDING' | 'VOTING' | 'VALIDATED' | 'REJECTED' | 'PAID';
+  status: ProjectStatus;
   evidenceHash: string;
-  evidenceUrls: string[]; // Added for deep dive verification
-  votesFor: number; // Community validation quota
+  evidenceUrls: string[];
+  votesFor: number;
   votesAgainst: number;
   timestamp: number;
   tokensRewarded: number;
   usdcValue: number;
+  slashedAmount?: number;
 }
 
 export interface DAOProposal {
@@ -37,19 +40,19 @@ export interface DAOProposal {
 
 export interface TransactionLog {
   id: string;
-  type: 'MINT' | 'VOTE' | 'PAYOUT' | 'STAKE';
+  type: 'MINT' | 'VOTE' | 'PAYOUT' | 'STAKE' | 'SLASH' | 'BRIDGE';
   amount: number;
   currency: 'PT' | 'USDC';
   timestamp: number;
   status: 'SUCCESS' | 'REVERTED';
   txHash: string;
+  metadata?: string;
 }
 
-export interface UserProfile {
-  address: string;
-  tier: IdentityTier;
-  reputation: number;
-  balancePT: number;
-  balanceUSDC: number;
-  sbtTokenId: string | null;
+export interface SystemHealth {
+  oracleLatency: number;
+  treasurySolvency: number;
+  activeNodes: number;
+  networkLoad: number;
+  securityPosture: 'HIGH' | 'GUARDED' | 'ELEVATED' | 'CRITICAL';
 }

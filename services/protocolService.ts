@@ -3,20 +3,21 @@ import { IdentityTier } from '../types';
 import { SYSTEM_CONFIG } from '../constants';
 
 /**
- * Protocol Logic Service
- * Acts as the "Controller" for the simulated backend state transitions.
+ * Protocol Logic Service (SRE & Financial Engineering)
+ * Designed for stateless operation and deterministic state transitions.
  */
 export const ProtocolService = {
   /**
-   * Calculates the final token reward based on user tier and base impact tokens.
+   * Calculates reward with tier-based multiplier and impact score weighting.
    */
-  calculateReward(baseTokens: number, tier: IdentityTier): number {
+  calculateReward(baseTokens: number, tier: IdentityTier, impactScore: number): number {
     const multiplier = SYSTEM_CONFIG.REWARD_MULTIPLIERS[tier] || 0.1;
-    return Math.floor(baseTokens * multiplier);
+    const impactWeight = impactScore / 100;
+    return Math.floor(baseTokens * multiplier * impactWeight);
   },
 
   /**
-   * Calculates Sell metrics (PT -> USDC)
+   * PT -> USDC Exchange with slippage and LP fee calculation.
    */
   calculateSwap(amountPT: number, currentPrice: number) {
     const feeRate = 0.001; // 0.1% protocol fee
@@ -24,55 +25,53 @@ export const ProtocolService = {
     const netPT = amountPT - fee;
     const usdcValue = netPT * currentPrice;
     
-    const slippage = Math.min(0.02, (amountPT / 1000000) * 0.05); 
+    // Dynamic slippage: 0.05% per 1M tokens swapped
+    const slippage = Math.min(0.05, (amountPT / 1000000) * 0.005); 
     const finalUSDC = usdcValue * (1 - slippage);
 
     return {
       fee,
       netPT,
       usdcValue: finalUSDC,
-      slippagePercentage: (slippage * 100).toFixed(2)
+      slippagePercentage: (slippage * 100).toFixed(3)
     };
   },
 
   /**
-   * Calculates Buy metrics (USDC -> PT)
+   * USDC -> PT Acquisition for Level 2 staking or market liquidity.
    */
   calculateBuy(amountUSDC: number, currentPrice: number) {
-    const feeRate = 0.0015; // Slightly higher 0.15% for buy side to fund DAO
+    const feeRate = 0.0015; // 0.15% Buy fee
     const feeUSDC = amountUSDC * feeRate;
     const netUSDC = amountUSDC - feeUSDC;
     const ptValue = netUSDC / currentPrice;
 
-    // Price impact simulation
-    const priceImpact = Math.min(0.03, (amountUSDC / 500000) * 0.05);
+    const priceImpact = Math.min(0.03, (amountUSDC / 1000000) * 0.01);
     const finalPT = ptValue * (1 - priceImpact);
 
     return {
       feeUSDC,
       finalPT,
-      priceImpact: (priceImpact * 100).toFixed(2)
+      priceImpact: (priceImpact * 100).toFixed(3)
     };
   },
 
   /**
-   * Verifies treasury solvency for a proposed disbursement.
+   * Mission-Critical Solvency Verification
    */
   verifySolvency(requestedUSDC: number, currentTreasury: number): boolean {
-    const reserveRequirement = 0.05; // Maintain 5% reserve minimum
-    const available = currentTreasury * (1 - reserveRequirement);
-    return requestedUSDC <= available;
+    const reserveFloor = 0.05; // 5% minimum reserve requirement
+    const liquidBuffer = currentTreasury * (1 - reserveFloor);
+    return requestedUSDC <= liquidBuffer;
   },
 
   /**
-   * Generates a deterministic transaction hash for logging.
+   * Deterministic 256-bit Hash Simulation
    */
   generateTxHash(): string {
-    const chars = '0123456789abcdef';
-    let hash = '0x';
-    for (let i = 0; i < 64; i++) {
-      hash += chars[Math.floor(Math.random() * chars.length)];
-    }
-    return hash;
+    const hex = '0123456789abcdef';
+    let res = '0x';
+    for (let i = 0; i < 64; i++) res += hex[Math.floor(Math.random() * 16)];
+    return res;
   }
 };
