@@ -27,13 +27,13 @@ interface DashboardStatsProps {
 
 const StatCard = ({ title, value, change, color, prefix = "" }: any) => (
   <div className="glass-panel p-5 rounded-xl border border-white/10 relative overflow-hidden group">
-    <div className="absolute top-0 right-0 p-2 opacity-10 group-hover:opacity-20 transition-opacity">
-      <div className={`w-12 h-12 rounded-full bg-${color || 'blue'}-500`}></div>
+    <div className={`absolute top-0 right-0 p-2 opacity-5 group-hover:opacity-10 transition-opacity`}>
+      <div className={`w-16 h-16 rounded-full bg-current text-${color}-500`}></div>
     </div>
     <p className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em] mb-1">{title}</p>
-    <div className="flex items-baseline justify-between">
+    <div className="flex items-baseline justify-between relative z-10">
       <h3 className="text-xl font-bold text-white mono tracking-tight">{prefix}{value}</h3>
-      <span className={`text-[10px] font-black ${change.startsWith('+') ? 'text-emerald-400' : 'text-rose-400'}`}>
+      <span className={`text-[10px] font-black ${change.includes('OF') || change.includes('+') ? 'text-blue-400' : 'text-slate-500'}`}>
         {change}
       </span>
     </div>
@@ -42,16 +42,16 @@ const StatCard = ({ title, value, change, color, prefix = "" }: any) => (
 
 const DashboardStats: React.FC<DashboardStatsProps> = ({ treasury, totalRewarded, ptPrice }) => {
   const marketCap = TOKENOMICS.TOTAL_SUPPLY * ptPrice;
-  const rewardPoolTokens = TOKENOMICS.TOTAL_SUPPLY * TOKENOMICS.ALLOCATION.REWARDS;
-  const rewardPercentageUsed = (totalRewarded / rewardPoolTokens) * 100;
+  const circulatingSupply = totalRewarded + (TOKENOMICS.TOTAL_SUPPLY * TOKENOMICS.ALLOCATION.SYSTEM); // Rewards + System base
+  const circulatingPercentage = (circulatingSupply / TOKENOMICS.TOTAL_SUPPLY) * 100;
 
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard title="MARKET CAP (LIVE)" value={`${marketCap.toLocaleString()}`} change="+0.02%" color="blue" prefix="$" />
-        <StatCard title="PEACE PRICE (ENTRY: $0.19)" value={`${ptPrice.toFixed(4)}`} change={`${ptPrice > 0.19 ? '+' : ''}${((ptPrice - 0.19)/0.19*100).toFixed(2)}%`} color="emerald" prefix="$" />
-        <StatCard title="REWARDS DISTRIBUTED" value={`${totalRewarded.toLocaleString()}`} change={`${rewardPercentageUsed.toFixed(2)}% OF POOL`} color="purple" />
-        <StatCard title="DAO TREASURY RESERVE" value={`${treasury.toLocaleString()}`} change="SOLVENT" color="amber" prefix="$" />
+        <StatCard title="PEACE PRICE" value={`${ptPrice.toFixed(4)}`} change={`${ptPrice > 0.19 ? '+' : ''}${((ptPrice - 0.19)/0.19*100).toFixed(2)}%`} color="emerald" prefix="$" />
+        <StatCard title="CIRCULATING SUPPLY" value={`${circulatingSupply.toLocaleString()}`} change={`${circulatingPercentage.toFixed(2)}% OF 1B`} color="blue" />
+        <StatCard title="DAO TREASURY" value={`${treasury.toLocaleString()}`} change="SOLVENT" color="amber" prefix="$" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -85,7 +85,7 @@ const DashboardStats: React.FC<DashboardStatsProps> = ({ treasury, totalRewarded
         </div>
 
         <div className="glass-panel p-6 rounded-2xl border border-white/10 flex flex-col items-center">
-          <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 w-full text-left">Supply Allocation (1B Cap)</h4>
+          <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 w-full text-left">Fixed Supply Allocation (1B PEACE)</h4>
           <ResponsiveContainer width="100%" height={200}>
             <PieChart>
               <Pie
