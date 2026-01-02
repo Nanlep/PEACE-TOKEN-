@@ -8,9 +8,10 @@ interface PayoutLedgerProps {
   onPayout: (id: string) => void;
   onVote: (id: string, side: 'FOR' | 'AGAINST') => void;
   userTier: IdentityTier;
+  ptPrice: number;
 }
 
-const PayoutLedger: React.FC<PayoutLedgerProps> = ({ projects, onPayout, onVote, userTier }) => {
+const PayoutLedger: React.FC<PayoutLedgerProps> = ({ projects, onPayout, onVote, userTier, ptPrice }) => {
   const canVote = userTier === IdentityTier.EXPERT || userTier === IdentityTier.INSTITUTION;
   const VOTE_QUOTA = 5;
 
@@ -21,8 +22,9 @@ const PayoutLedger: React.FC<PayoutLedgerProps> = ({ projects, onPayout, onVote,
           <h2 className="text-lg font-bold text-white">Validation & Payout Ledger</h2>
           <p className="text-[10px] text-slate-500 uppercase tracking-widest mt-1">Multi-Layer Consensus Enforcement</p>
         </div>
-        <div className="text-[10px] font-mono text-slate-500 bg-white/5 px-2 py-1 rounded">
-          PARITY: 1 PT = 1.00 USDC
+        <div className="text-[10px] font-mono text-blue-400 bg-blue-400/5 border border-blue-500/10 px-2 py-1 rounded flex items-center gap-2">
+          <div className="w-1 h-1 bg-blue-400 rounded-full animate-pulse"></div>
+          LIVE RATE: 1 PT = ${ptPrice.toFixed(4)} USDC
         </div>
       </div>
 
@@ -81,7 +83,7 @@ const PayoutLedger: React.FC<PayoutLedgerProps> = ({ projects, onPayout, onVote,
                 </td>
                 <td className="py-4 text-right">
                   <div className="text-white font-bold">{p.tokensRewarded} PT</div>
-                  <div className="text-slate-500 font-mono scale-90 origin-right">${p.usdcValue.toLocaleString()} USDC</div>
+                  <div className="text-slate-500 font-mono scale-90 origin-right">${(p.tokensRewarded * ptPrice).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDC</div>
                 </td>
                 <td className="py-4 text-right">
                   <div className="flex justify-end gap-2">

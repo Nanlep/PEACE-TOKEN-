@@ -12,7 +12,7 @@ const UserGuideModal: React.FC<UserGuideModalProps> = ({ isOpen, onClose }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[120] flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/90 backdrop-blur-xl" onClick={onClose}></div>
       <div className="glass-panel w-full max-w-2xl max-h-[85vh] rounded-3xl border border-white/10 overflow-hidden relative animate-in fade-in zoom-in-95 duration-300 flex flex-col">
         <div className="p-6 border-b border-white/5 flex justify-between items-center bg-white/5 shrink-0">
@@ -113,23 +113,27 @@ const UserGuideModal: React.FC<UserGuideModalProps> = ({ isOpen, onClose }) => {
                 
                 <div className="space-y-6">
                   <div>
+                    <h4 className="text-blue-400 text-[11px] font-black uppercase tracking-widest mb-2">Q: How do I acquire the 1,000 PT required for Level 2 verification?</h4>
+                    <p className="text-sm text-slate-400">There are three primary methods: <br/> 
+                      1. <strong>Mining:</strong> Accumulate rewards by submitting Level 1 Peace Acts. <br/> 
+                      2. <strong>Market Purchase:</strong> Use the <strong>Capital Injection Bridge</strong> to fund your wallet with USDC, then use the <strong>Asset Exchange</strong> to buy PT. <br/> 
+                      3. <strong>Grants:</strong> High-impact actors may receive PT allocations directly from the DAO Treasury through successful PIP-Grant proposals.
+                    </p>
+                  </div>
+
+                  <div>
+                    <h4 className="text-blue-400 text-[11px] font-black uppercase tracking-widest mb-2">Q: How do Level 2 (Expert) users benefit?</h4>
+                    <p className="text-sm text-slate-400">Level 2 users gain a <strong>2.5x Reward Multiplier</strong> on impact submissions, <strong>DAO Voting Rights</strong> to influence treasury spending, and access to <strong>Validation Bounties</strong> sourced from slashed fees of bad actors.</p>
+                  </div>
+
+                  <div>
                     <h4 className="text-blue-400 text-[11px] font-black uppercase tracking-widest mb-2">Q: How is the Treasury collateralized?</h4>
                     <p className="text-sm text-slate-400">The DAO Treasury (40% of supply) is paired with USDC in an Automated Market Maker (AMM). Initial liquidity is provided by Institutional commitments during the 'Level 3' onboarding process.</p>
                   </div>
 
                   <div>
-                    <h4 className="text-blue-400 text-[11px] font-black uppercase tracking-widest mb-2">Q: How do Level 2 (Expert) users benefit from participating in the protocol?</h4>
-                    <p className="text-sm text-slate-400">Level 2 users gain a <strong>2.5x Reward Multiplier</strong> on impact submissions, <strong>DAO Voting Rights</strong> to influence treasury spending, and access to <strong>Validation Bounties</strong> sourced from slashed fees of bad actors. They also build a verifiable on-chain reputation as trusted mediators.</p>
-                  </div>
-
-                  <div>
                     <h4 className="text-blue-400 text-[11px] font-black uppercase tracking-widest mb-2">Q: Are tier 2 and 3 users required to acquire a certain number of peace tokens to be verified?</h4>
-                    <p className="text-sm text-slate-400"><strong>Level 2 (Expert):</strong> Yes, a mandatory 1,000 PT Stake is required as collateral for governance and validation powers. <strong>Level 3 (Institution):</strong> No initial token purchase is required, but verification is contingent upon a Deep Compliance Audit and institutional capital commitments to support the Treasury's solvency.</p>
-                  </div>
-
-                  <div>
-                    <h4 className="text-blue-400 text-[11px] font-black uppercase tracking-widest mb-2">Q: What happens if an AI validation is disputed?</h4>
-                    <p className="text-sm text-slate-400">If the Oracle rejects a claim, it can be appealed to the Level 2 Expert Pool. Experts must stake PT to initiate a manual audit. If the Oracle is proven wrong, the Oracle is re-trained and the Experts earn the slashed validation fees.</p>
+                    <p className="text-sm text-slate-400"><strong>Level 2 (Expert):</strong> Yes, a mandatory 1,000 PT Stake is required as collateral for governance and validation powers. <strong>Level 3 (Institution):</strong> No initial token purchase is required, but verification is contingent upon a Deep Compliance Audit and institutional capital commitments.</p>
                   </div>
 
                   <div>
@@ -139,12 +143,12 @@ const UserGuideModal: React.FC<UserGuideModalProps> = ({ isOpen, onClose }) => {
 
                   <div>
                     <h4 className="text-blue-400 text-[11px] font-black uppercase tracking-widest mb-2">Q: Can tokens be printed infinitely?</h4>
-                    <p className="text-sm text-slate-400">No. The smart contract has a strict hard cap of 1,000,000,000 PEACE. Once the 50% Reward Pool is empty, the protocol transitions to a "Deflationary Phase" where rewards are sourced from protocol fees and burns.</p>
+                    <p className="text-sm text-slate-400">No. The smart contract has a strict hard cap of 1,000,000,000 PEACE. Once the 50% Reward Pool is empty, the protocol transitions to a "Deflationary Phase".</p>
                   </div>
 
                   <div>
                     <h4 className="text-blue-400 text-[11px] font-black uppercase tracking-widest mb-2">Q: Is the protocol legally defensible?</h4>
-                    <p className="text-sm text-slate-400">Yes. Every state change generates a 256-bit hash mapped to a persistent global ledger. This provides a clear, immutable audit trail for NGOs and government agencies to verify where every dollar was spent.</p>
+                    <p className="text-sm text-slate-400">Yes. Every state change generates a 256-bit hash mapped to a persistent global ledger. This provides a clear, immutable audit trail for NGOs and government agencies.</p>
                   </div>
                 </div>
               </section>

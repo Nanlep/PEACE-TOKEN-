@@ -8,10 +8,19 @@ interface HeaderProps {
   walletAddress: string | null;
   onConnect: () => void;
   onOpenExchange: () => void;
+  onOpenBridge: () => void;
   isEligible: boolean;
 }
 
-const Header: React.FC<HeaderProps> = ({ balancePT, balanceUSDC, walletAddress, onConnect, onOpenExchange, isEligible }) => {
+const Header: React.FC<HeaderProps> = ({ 
+  balancePT, 
+  balanceUSDC, 
+  walletAddress, 
+  onConnect, 
+  onOpenExchange, 
+  onOpenBridge,
+  isEligible 
+}) => {
   return (
     <header className="border-b border-white/10 bg-[#0a0a0c]/80 backdrop-blur-md sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
@@ -30,13 +39,23 @@ const Header: React.FC<HeaderProps> = ({ balancePT, balanceUSDC, walletAddress, 
             <div className="status-pulse"></div>
             <span className="text-xs font-medium text-emerald-400 font-mono uppercase tracking-tighter">Live Node Sync</span>
           </div>
-          {walletAddress && isEligible && (
-            <button 
-              onClick={onOpenExchange}
-              className="px-3 py-1.5 bg-blue-600/10 hover:bg-blue-600/20 text-blue-400 border border-blue-500/20 rounded-md text-[9px] font-black uppercase tracking-widest transition-all"
-            >
-              Exchange Assets
-            </button>
+          {walletAddress && (
+            <div className="flex items-center gap-2">
+              <button 
+                onClick={onOpenBridge}
+                className="px-3 py-1.5 bg-emerald-600/10 hover:bg-emerald-600/20 text-emerald-400 border border-emerald-500/20 rounded-md text-[9px] font-black uppercase tracking-widest transition-all"
+              >
+                Fund Bridge
+              </button>
+              {isEligible && (
+                <button 
+                  onClick={onOpenExchange}
+                  className="px-3 py-1.5 bg-blue-600/10 hover:bg-blue-600/20 text-blue-400 border border-blue-500/20 rounded-md text-[9px] font-black uppercase tracking-widest transition-all"
+                >
+                  Exchange Assets
+                </button>
+              )}
+            </div>
           )}
         </div>
 

@@ -16,7 +16,7 @@ export const ProtocolService = {
   },
 
   /**
-   * Calculates swap metrics including fees and slippage.
+   * Calculates Sell metrics (PT -> USDC)
    */
   calculateSwap(amountPT: number, currentPrice: number) {
     const feeRate = 0.001; // 0.1% protocol fee
@@ -24,7 +24,6 @@ export const ProtocolService = {
     const netPT = amountPT - fee;
     const usdcValue = netPT * currentPrice;
     
-    // Simulate dynamic slippage (increased with volume)
     const slippage = Math.min(0.02, (amountPT / 1000000) * 0.05); 
     const finalUSDC = usdcValue * (1 - slippage);
 
@@ -33,6 +32,26 @@ export const ProtocolService = {
       netPT,
       usdcValue: finalUSDC,
       slippagePercentage: (slippage * 100).toFixed(2)
+    };
+  },
+
+  /**
+   * Calculates Buy metrics (USDC -> PT)
+   */
+  calculateBuy(amountUSDC: number, currentPrice: number) {
+    const feeRate = 0.0015; // Slightly higher 0.15% for buy side to fund DAO
+    const feeUSDC = amountUSDC * feeRate;
+    const netUSDC = amountUSDC - feeUSDC;
+    const ptValue = netUSDC / currentPrice;
+
+    // Price impact simulation
+    const priceImpact = Math.min(0.03, (amountUSDC / 500000) * 0.05);
+    const finalPT = ptValue * (1 - priceImpact);
+
+    return {
+      feeUSDC,
+      finalPT,
+      priceImpact: (priceImpact * 100).toFixed(2)
     };
   },
 

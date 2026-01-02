@@ -8,6 +8,7 @@ import PayoutLedger from './components/PayoutLedger';
 import ProposalCard from './components/ProposalCard';
 import CommunityWidget from './components/CommunityWidget';
 import ExchangeModal from './components/ExchangeModal';
+import FundingModal from './components/FundingModal';
 import UserGuideModal from './components/UserGuideModal';
 import { PeaceProject, DAOProposal, IdentityTier, TransactionLog } from './types';
 import { Icons, TOKENOMICS } from './constants';
@@ -23,17 +24,17 @@ const App: React.FC = () => {
   const [isPaused, setIsPaused] = useState(false);
   const [isDiscordLinked, setIsDiscordLinked] = useState(false);
   
-  // Adjusted for 1B @ $0.19 Target
-  const [treasury, setTreasury] = useState(TOKENOMICS.TARGET_MARKET_CAP * TOKENOMICS.ALLOCATION.DAO); // $76M initial liquid pool at 40% of 1B
+  const [treasury, setTreasury] = useState(TOKENOMICS.TARGET_MARKET_CAP * TOKENOMICS.ALLOCATION.DAO); 
   const [totalRewarded, setTotalRewarded] = useState(0);
   const [logs, setLogs] = useState<TransactionLog[]>([]);
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
   const [balancePT, setBalancePT] = useState(0);
-  const [balanceUSDC, setBalanceUSDC] = useState(190.00); // Starter gas
+  const [balanceUSDC, setBalanceUSDC] = useState(190.00); 
   
-  // Market State
-  const [ptPrice, setPtPrice] = useState(TOKENOMICS.INITIAL_PRICE_USDC); // Start at $0.19
+  // Market & UI State
+  const [ptPrice, setPtPrice] = useState(TOKENOMICS.INITIAL_PRICE_USDC); 
   const [isExchangeOpen, setIsExchangeOpen] = useState(false);
+  const [isFundingOpen, setIsFundingOpen] = useState(false);
   const [isUserGuideOpen, setIsUserGuideOpen] = useState(false);
 
   const [proposals, setProposals] = useState<DAOProposal[]>([
@@ -61,7 +62,6 @@ const App: React.FC = () => {
     }
   ]);
 
-  // Price Simulation Hook
   useEffect(() => {
     const interval = setInterval(() => {
       setPtPrice(prev => {
@@ -72,7 +72,6 @@ const App: React.FC = () => {
     return () => clearInterval(interval);
   }, []);
 
-  // Persistence Layer
   useEffect(() => {
     const saved = localStorage.getItem(LEDGER_KEY);
     if (saved) {
@@ -107,36 +106,22 @@ const App: React.FC = () => {
 
   const handleProjectValidated = (newProject: PeaceProject) => {
     if (isPaused || !walletAddress) return;
-    
-    if (totalRewarded + newProject.tokensRewarded > TOKENOMICS.TOTAL_SUPPLY * TOKENOMICS.ALLOCATION.REWARDS) {
-      alert("PROTOCOL ALERT: Rewards pool depletion reached. Transitioning to DAO secondary funding.");
-      return;
-    }
-
     const tieredReward = ProtocolService.calculateReward(newProject.tokensRewarded, currentTier);
     const finalProject = { ...newProject, tokensRewarded: tieredReward, usdcValue: tieredReward * ptPrice };
-    
     setProjects(prev => [finalProject, ...prev]);
-    addLog('MINT', 0, 'PT'); // Pre-mint validation event
+    addLog('MINT', 0, 'PT'); 
   };
 
   const handleProjectVote = (id: string, side: 'FOR' | 'AGAINST') => {
     if (isPaused || !walletAddress) return;
     const VOTE_QUOTA = 5;
-
     setProjects(prev => prev.map(p => {
       if (p.id === id && p.status === 'VOTING') {
         const newVotesFor = side === 'FOR' ? p.votesFor + 1 : p.votesFor;
         const newVotesAgainst = side === 'AGAINST' ? p.votesAgainst + 1 : p.votesAgainst;
-        
         let newStatus: PeaceProject['status'] = p.status;
-        if (newVotesFor >= VOTE_QUOTA) {
-          newStatus = 'VALIDATED';
-          addLog('VOTE', 0, 'PT'); // Validation complete
-        } else if (newVotesAgainst >= VOTE_QUOTA) {
-          newStatus = 'REJECTED';
-        }
-
+        if (newVotesFor >= VOTE_QUOTA) { newStatus = 'VALIDATED'; addLog('VOTE', 0, 'PT'); }
+        else if (newVotesAgainst >= VOTE_QUOTA) { newStatus = 'REJECTED'; }
         return { ...p, votesFor: newVotesFor, votesAgainst: newVotesAgainst, status: newStatus };
       }
       return p;
@@ -151,16 +136,7 @@ const App: React.FC = () => {
 
   const handleVote = (id: string, side: 'FOR' | 'AGAINST') => {
     if (isPaused || !walletAddress) return;
-    setProposals(prev => prev.map(p => {
-      if (p.id === id) {
-        return {
-          ...p,
-          votesFor: side === 'FOR' ? p.votesFor + 1250 : p.votesFor,
-          votesAgainst: side === 'AGAINST' ? p.votesAgainst + 1250 : p.votesAgainst,
-        };
-      }
-      return p;
-    }));
+    setProposals(prev => prev.map(p => p.id === id ? { ...p, votesFor: side === 'FOR' ? p.votesFor + 1250 : p.votesFor, votesAgainst: side === 'AGAINST' ? p.votesAgainst + 1250 : p.votesAgainst } : p));
     addLog('VOTE', 1250, 'PT');
   };
 
@@ -184,28 +160,33 @@ const App: React.FC = () => {
     }));
   };
 
-  const handleExchange = (amountPT: number) => {
-    const swap = ProtocolService.calculateSwap(amountPT, ptPrice);
-    
-    if (!ProtocolService.verifySolvency(swap.usdcValue, treasury)) {
-      alert("PROTOCOL RISK: Solvency check failed. DAO Treasury reserve must remain stable. Operation aborted.");
-      return;
+  const handleExchange = (amount: number, side: 'BUY' | 'SELL') => {
+    if (side === 'SELL') {
+      const swap = ProtocolService.calculateSwap(amount, ptPrice);
+      if (!ProtocolService.verifySolvency(swap.usdcValue, treasury)) { alert("SOLVENCY ERROR"); return; }
+      setBalancePT(prev => prev - amount);
+      setBalanceUSDC(prev => prev + swap.usdcValue);
+      setTreasury(prev => prev - swap.usdcValue);
+      addLog('PAYOUT', swap.usdcValue, 'USDC');
+    } else {
+      const calc = ProtocolService.calculateBuy(amount * ptPrice, ptPrice); // amount here is final PT requested
+      const usdcCost = amount * ptPrice;
+      setBalanceUSDC(prev => prev - usdcCost);
+      setBalancePT(prev => prev + amount);
+      setTreasury(prev => prev + usdcCost);
+      addLog('MINT', amount, 'PT');
     }
+  };
 
-    setBalancePT(prev => prev - amountPT);
-    setBalanceUSDC(prev => prev + swap.usdcValue);
-    setTreasury(prev => prev - swap.usdcValue);
-    addLog('PAYOUT', swap.usdcValue, 'USDC');
+  const handleFundUSDC = (amount: number) => {
+    setBalanceUSDC(prev => prev + amount);
+    addLog('PAYOUT', amount, 'USDC'); // Simulating bridge deposit
   };
 
   const addLog = (type: any, amount: number, currency: any) => {
     const newLog: TransactionLog = {
       id: Math.random().toString(36).substr(2, 9),
-      type,
-      amount,
-      currency,
-      timestamp: Date.now(),
-      status: 'SUCCESS',
+      type, amount, currency, timestamp: Date.now(), status: 'SUCCESS',
       txHash: ProtocolService.generateTxHash()
     };
     setLogs(prev => [newLog, ...prev.slice(0, 14)]);
@@ -217,41 +198,20 @@ const App: React.FC = () => {
     addLog('STAKE', 0, 'PT');
   };
 
-  const downloadMasterLedger = () => {
-    const auditObj = {
-      protocol: "Peace-Token v4.2.0-PROD",
-      timestamp: new Date().toISOString(),
-      signature: ProtocolService.generateTxHash(),
-      ptMarketPrice: ptPrice,
-      treasurySnapshot: treasury,
-      totalRewarded: totalRewarded,
-      projects: projects,
-      auditLogs: logs
-    };
-    const blob = new Blob([JSON.stringify(auditObj, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `PEACE_LEDGER_AUDIT_${Date.now()}.json`;
-    a.click();
-  };
-
   const isArchitect = currentTier === IdentityTier.INSTITUTION;
 
   return (
     <div className="min-h-screen flex flex-col selection:bg-blue-500/30">
       <Header 
-        balancePT={balancePT} 
-        balanceUSDC={balanceUSDC} 
-        walletAddress={walletAddress}
-        onConnect={handleConnect}
-        onOpenExchange={() => setIsExchangeOpen(true)}
+        balancePT={balancePT} balanceUSDC={balanceUSDC} walletAddress={walletAddress}
+        onConnect={handleConnect} onOpenExchange={() => setIsExchangeOpen(true)}
+        onOpenBridge={() => setIsFundingOpen(true)}
         isEligible={currentTier !== IdentityTier.UNVERIFIED}
       />
       
       {isPaused && (
         <div className="bg-rose-600 text-white text-[10px] font-black uppercase tracking-[0.3em] py-2.5 text-center animate-pulse sticky top-16 z-50 border-b border-rose-400/20">
-          PROTOCOL EMERGENCY CIRCUIT BREAKER ACTIVE: REVERTING ALL PENDING STATE
+          PROTOCOL EMERGENCY CIRCUIT BREAKER ACTIVE
         </div>
       )}
 
@@ -266,102 +226,30 @@ const App: React.FC = () => {
                    <h2 className="text-4xl font-black text-white uppercase tracking-tight mb-4">Peace-Token Protocol</h2>
                    <p className="text-slate-400 text-lg leading-relaxed">A mission-critical decentralized ledger for verifying and rewarding global peace-building efforts.</p>
                 </div>
-                <button 
-                  onClick={handleConnect}
-                  className="px-16 py-5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-sm font-black uppercase tracking-[0.4em] shadow-2xl shadow-blue-900/60 transition-all active:scale-95 group"
-                >
+                <button onClick={handleConnect} className="px-16 py-5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-sm font-black uppercase tracking-[0.4em] shadow-2xl shadow-blue-900/60 transition-all active:scale-95 group">
                    Initialize Persistent Node <span className="inline-block transition-transform group-hover:translate-x-1">→</span>
                 </button>
              </div>
-
-             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 w-full border-t border-white/5 pt-16">
-                <div className="glass-panel p-8 rounded-2xl border border-white/10 text-center md:text-left">
-                   <div className="w-10 h-10 bg-blue-500/10 rounded-lg border border-blue-500/20 flex items-center justify-center text-blue-400 mb-6 mx-auto md:mx-0">
-                      <Icons.Token />
-                   </div>
-                   <h3 className="text-white font-bold text-lg mb-2 uppercase tracking-tight">1B PEACE Supply</h3>
-                   <p className="text-sm text-slate-500 leading-relaxed">Capped algorithmically. Rewards are minted from a 500M PE pool via AI-verified impact validation.</p>
-                </div>
-                <div className="glass-panel p-8 rounded-2xl border border-white/10 text-center md:text-left">
-                   <div className="w-10 h-10 bg-emerald-500/10 rounded-lg border border-emerald-500/20 flex items-center justify-center text-emerald-400 mb-6 mx-auto md:mx-0">
-                      <Icons.Pulse />
-                   </div>
-                   <h3 className="text-white font-bold text-lg mb-2 uppercase tracking-tight">AI Oracle Audit</h3>
-                   <p className="text-sm text-slate-500 leading-relaxed">Every claim is analyzed by our Chief Validation Officer for non-violence alignment and impact veracity.</p>
-                </div>
-                <div className="glass-panel p-8 rounded-2xl border border-white/10 text-center md:text-left">
-                   <div className="w-10 h-10 bg-amber-500/10 rounded-lg border border-amber-500/20 flex items-center justify-center text-amber-400 mb-6 mx-auto md:mx-0">
-                      <Icons.Vote />
-                   </div>
-                   <h3 className="text-white font-bold text-lg mb-2 uppercase tracking-tight">DAO Governance</h3>
-                   <p className="text-sm text-slate-500 leading-relaxed">Community-driven treasury grants and protocol upgrades via quadratic-weighted voting mechanisms.</p>
-                </div>
-             </div>
-
-             <div className="flex flex-col items-center gap-6">
-               <div className="flex items-center gap-8 border-t border-white/5 pt-6 w-full justify-center">
-                 <button 
-                  onClick={() => setIsUserGuideOpen(true)}
-                  className="text-blue-400 hover:text-blue-300 text-[9px] font-black uppercase tracking-widest text-center"
-                 >
-                    Read User Guide
-                 </button>
-                 <button 
-                  onClick={() => setIsUserGuideOpen(true)}
-                  className="text-emerald-400 hover:text-emerald-300 text-[9px] font-black uppercase tracking-widest text-center"
-                 >
-                    Protocol FAQs
-                 </button>
-                 <button 
-                  onClick={downloadWhitePaper}
-                  className="text-slate-500 hover:text-white text-[9px] font-black uppercase tracking-widest text-center"
-                 >
-                    White-paper
-                 </button>
-               </div>
+             <div className="flex items-center gap-8 border-t border-white/5 pt-6 w-full justify-center">
+               <button onClick={() => setIsUserGuideOpen(true)} className="text-blue-400 hover:text-blue-300 text-[9px] font-black uppercase tracking-widest text-center">Documentation</button>
+               <button onClick={downloadWhitePaper} className="text-slate-500 hover:text-white text-[9px] font-black uppercase tracking-widest text-center">White-paper</button>
              </div>
           </div>
         ) : (
           <div className="flex flex-col gap-8 animate-in slide-in-from-bottom-4 duration-500">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div>
-                <h2 className="text-2xl font-bold text-white tracking-tight flex items-center gap-3">
-                  Mission Control 
-                  <span className="text-[10px] font-black bg-blue-500/10 border border-blue-500/20 px-2 py-0.5 rounded text-blue-400 uppercase tracking-widest">Node 0x..77 Active</span>
-                </h2>
-                <p className="text-slate-400 text-sm">Synchronized Assets: ${treasury.toLocaleString()} USDC (Price: ${ptPrice.toFixed(4)})</p>
+                <h2 className="text-2xl font-bold text-white tracking-tight flex items-center gap-3">Mission Control</h2>
+                <p className="text-slate-400 text-sm">USDC Reserves: ${treasury.toLocaleString()} | PT Market: ${ptPrice.toFixed(4)}</p>
               </div>
               <div className="flex flex-wrap gap-2">
-                <button 
-                  onClick={() => setIsUserGuideOpen(true)}
-                  className="px-4 py-2 glass-panel hover:bg-white/10 hover:text-white rounded-lg text-[9px] font-black uppercase tracking-widest text-slate-300 border border-white/10 transition-all flex items-center gap-2"
-                >
-                   Protocol User Guide
+                <button onClick={() => setIsFundingOpen(true)} className="px-4 py-2 bg-emerald-600/10 border border-emerald-500/20 text-emerald-400 rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-emerald-500/10 transition-all">
+                  Liquidity Bridge
                 </button>
-                <button 
-                  onClick={downloadWhitePaper}
-                  className="px-4 py-2 glass-panel hover:bg-blue-500/10 hover:text-blue-400 rounded-lg text-[9px] font-black uppercase tracking-widest text-slate-300 border border-white/10 transition-all flex items-center gap-2"
-                >
-                   White-paper
-                </button>
-                <button 
-                  onClick={downloadMasterLedger}
-                  className="px-4 py-2 glass-panel hover:bg-emerald-500/10 hover:text-emerald-400 rounded-lg text-[9px] font-black uppercase tracking-widest text-slate-300 border border-white/10 transition-all flex items-center gap-2"
-                >
-                   <div className="status-pulse"></div> Export Audit
-                </button>
-                {isArchitect ? (
-                  <button 
-                    onClick={togglePause}
-                    className={`px-4 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all border ${isPaused ? 'bg-emerald-600 text-white border-emerald-500 shadow-lg shadow-emerald-900/20' : 'bg-rose-900/20 border-rose-500/20 text-rose-500 hover:bg-rose-500/20'}`}
-                  >
-                    {isPaused ? 'RESUME PROTOCOL' : 'PANIC REVERT'}
+                {isArchitect && (
+                  <button onClick={togglePause} className={`px-4 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all border ${isPaused ? 'bg-emerald-600 text-white border-emerald-500' : 'bg-rose-900/20 border-rose-500/20 text-rose-500'}`}>
+                    {isPaused ? 'RESUME' : 'PANIC'}
                   </button>
-                ) : (
-                  <div className="px-4 py-2 bg-white/5 border border-white/10 rounded-lg flex items-center gap-2">
-                    <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></div>
-                    <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Protocol Stable</span>
-                  </div>
                 )}
               </div>
             </div>
@@ -371,42 +259,15 @@ const App: React.FC = () => {
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
               <div className="lg:col-span-8 flex flex-col gap-8">
                 <ProjectSubmission onValidated={handleProjectValidated} userTier={currentTier} />
-                <PayoutLedger 
-                  projects={projects} 
-                  onPayout={handlePayout} 
-                  onVote={handleProjectVote}
-                  userTier={currentTier}
-                />
+                <PayoutLedger projects={projects} onPayout={handlePayout} onVote={handleProjectVote} userTier={currentTier} ptPrice={ptPrice} />
               </div>
-
               <div className="lg:col-span-4 flex flex-col gap-8">
-                <IdentityVerification 
-                  currentTier={currentTier} 
-                  isDiscordLinked={isDiscordLinked}
-                  onTierUpgrade={handleTierUpgrade}
-                  onLinkDiscord={handleLinkDiscord}
-                />
-                
+                <IdentityVerification currentTier={currentTier} isDiscordLinked={isDiscordLinked} onTierUpgrade={handleTierUpgrade} onLinkDiscord={handleLinkDiscord} />
                 <CommunityWidget isDiscordLinked={isDiscordLinked} onLinkDiscord={handleLinkDiscord} />
-                
                 <div className="glass-panel p-6 rounded-2xl border border-white/10">
-                  <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-lg font-bold text-white">DAO Governance</h2>
-                    <div className="flex items-center gap-1.5 text-blue-400 text-xs font-bold font-mono">
-                      <Icons.Vote />
-                      <span>PIP VOTING ACTIVE</span>
-                    </div>
-                  </div>
-                  
+                  <h2 className="text-lg font-bold text-white mb-6">DAO Governance</h2>
                   <div className="space-y-4">
-                    {proposals.map((p) => (
-                      <ProposalCard 
-                        key={p.id} 
-                        proposal={p} 
-                        onVote={handleVote} 
-                        onExecute={handleExecute} 
-                      />
-                    ))}
+                    {proposals.map((p) => <ProposalCard key={p.id} proposal={p} onVote={handleVote} onExecute={handleExecute} />)}
                   </div>
                 </div>
               </div>
@@ -415,54 +276,13 @@ const App: React.FC = () => {
         )}
       </main>
 
-      <footer className="border-t border-white/5 py-12 bg-[#0a0a0c]">
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8 text-center md:text-left">
-            <div>
-              <h5 className="text-[10px] font-black text-white uppercase tracking-widest mb-4">Market Liquidity</h5>
-              <p className="text-[10px] text-slate-500 leading-relaxed">PEACE is paired with USDC. Market Cap: ${(TOKENOMICS.TOTAL_SUPPLY * ptPrice).toLocaleString()} USDC.</p>
-            </div>
-            <div>
-              <h5 className="text-[10px] font-black text-white uppercase tracking-widest mb-4">Allocation Policy</h5>
-              <p className="text-[10px] text-slate-500 leading-relaxed">50% Rewards | 40% DAO Treasury | 10% Systems. Supply Capped at 1,000,000,000 PEACE.</p>
-            </div>
-            <div>
-              <h5 className="text-[10px] font-black text-white uppercase tracking-widest mb-4">Architecture Role</h5>
-              <p className="text-[10px] text-slate-500 leading-relaxed">System Architect controls the Panic Revert circuit and verifies high-stakes identity audits.</p>
-            </div>
-          </div>
-          <div className="border-t border-white/5 pt-8 text-center flex flex-col md:flex-row items-center justify-between gap-4">
-             <p className="text-slate-600 text-[10px] font-mono uppercase tracking-[0.2em]">© 2025 PEACE-TOKEN FOUNDATION | INFRASTRUCTURE: DEPLOYED-STABLE</p>
-             <div className="flex items-center gap-6">
-                <button 
-                  onClick={() => setIsUserGuideOpen(true)}
-                  className="text-slate-500 hover:text-white text-[9px] font-black uppercase tracking-widest"
-                >
-                    Protocol FAQs (Read Only)
-                </button>
-                <button 
-                  onClick={() => setIsUserGuideOpen(true)}
-                  className="text-slate-500 hover:text-white text-[9px] font-black uppercase tracking-widest"
-                >
-                    User Guide
-                </button>
-             </div>
-          </div>
-        </div>
-      </footer>
-
       <ExchangeModal 
-        isOpen={isExchangeOpen}
-        onClose={() => setIsExchangeOpen(false)}
-        balancePT={balancePT}
-        ptPrice={ptPrice}
-        onExchange={handleExchange}
+        isOpen={isExchangeOpen} onClose={() => setIsExchangeOpen(false)}
+        balancePT={balancePT} balanceUSDC={balanceUSDC} ptPrice={ptPrice}
+        onExchange={handleExchange} onOpenBridge={() => { setIsExchangeOpen(false); setIsFundingOpen(true); }}
       />
-
-      <UserGuideModal 
-        isOpen={isUserGuideOpen}
-        onClose={() => setIsUserGuideOpen(false)}
-      />
+      <FundingModal isOpen={isFundingOpen} onClose={() => setIsFundingOpen(false)} onFund={handleFundUSDC} />
+      <UserGuideModal isOpen={isUserGuideOpen} onClose={() => setIsUserGuideOpen(false)} />
     </div>
   );
 };
