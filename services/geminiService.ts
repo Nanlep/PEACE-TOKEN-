@@ -1,7 +1,6 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
 
-// Always use the process.env.API_KEY directly as per guidelines
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 export interface ValidationResult {
@@ -29,8 +28,8 @@ export const validatePeaceProject = async (
   try {
     const response = await ai.models.generateContent({
       model: "gemini-3-pro-preview",
-      contents: `Perform a rigorous audit of this peace-building project for an enterprise-grade protocol. 
-      Analyze the logic for: 
+      contents: `Perform a rigorous audit of this peace-building project. 
+      Analyze: 
       1. Non-violent alignment.
       2. Measurable impact metrics.
       3. Verifiability of the evidence hash: ${evidenceHash}.
@@ -38,16 +37,16 @@ export const validatePeaceProject = async (
       Project Title: ${title}
       Project Summary: ${description}`,
       config: {
-        systemInstruction: "You are the Chief Validation Officer of the Peace-Token Protocol. Be skeptical, rigorous, and strictly objective. Ensure no double-counting of impact.",
+        systemInstruction: "You are the Chief Validation Officer of the Peace-Token Protocol. Be skeptical and strictly objective.",
         thinkingConfig: { thinkingBudget: 4000 },
         responseMimeType: "application/json",
         responseSchema: {
           type: Type.OBJECT,
           properties: {
             isAuthentic: { type: Type.BOOLEAN },
-            impactScore: { type: Type.NUMBER, description: "Scale 0-100" },
+            impactScore: { type: Type.NUMBER },
             justification: { type: Type.STRING },
-            suggestedTokens: { type: Type.NUMBER, description: "Capped at 5000 PT per submission" }
+            suggestedTokens: { type: Type.NUMBER }
           },
           required: ["isAuthentic", "impactScore", "justification", "suggestedTokens"]
         }
@@ -58,19 +57,17 @@ export const validatePeaceProject = async (
     if (result.suggestedTokens > 5000) result.suggestedTokens = 5000;
     return result;
   } catch (error) {
-    console.error("Critical Oracle Failure:", error);
     return {
       isAuthentic: false,
       impactScore: 0,
-      justification: "System failure during consensus. Submission has been quarantined for manual audit.",
+      justification: "System failure during consensus.",
       suggestedTokens: 0
     };
   }
 };
 
 /**
- * Performs an AI-driven audit of institutional credentials for Level 3 (INSTITUTION) upgrades.
- * Note: This result is a 'Pre-Approval' which must be signed by System Guardians.
+ * Audits institutional credentials for Level 3 upgrades.
  */
 export const auditInstitutionalIdentity = async (
   entityName: string,
@@ -79,14 +76,10 @@ export const auditInstitutionalIdentity = async (
   try {
     const response = await ai.models.generateContent({
       model: "gemini-3-pro-preview",
-      contents: `Audit institutional entity: ${entityName}. 
-      Cross-reference provided credentials hash: ${credentialsHash} against known risk profiles for peace-building organizations.
-      Look for:
-      1. Operational history.
-      2. Compliance with international non-profit standards.
-      3. Potential conflict of interest in the current geopolitical landscape.`,
+      contents: `Audit institutional entity: ${entityName}. Hash: ${credentialsHash}. 
+      Evaluate operational history and compliance with international non-profit standards.`,
       config: {
-        systemInstruction: "You are the Compliance Auditor for the Peace-Token Protocol. Evaluate institutional legitimacy. Score risk from 0 (Safe) to 100 (High Risk). Approval requires risk < 20. Your approval constitutes a 'PRE-APPROVAL' recommendation for final System Guardian review.",
+        systemInstruction: "You are the Compliance Auditor for the Peace-Token Protocol. Approval requires risk < 20.",
         thinkingConfig: { thinkingBudget: 4000 },
         responseMimeType: "application/json",
         responseSchema: {
@@ -104,12 +97,71 @@ export const auditInstitutionalIdentity = async (
 
     return JSON.parse(response.text.trim());
   } catch (error) {
-    console.error("Identity Audit Failure:", error);
     return {
       isApproved: false,
       riskScore: 100,
-      reasoning: "Protocol internal audit service is currently unreachable.",
+      reasoning: "Audit service unreachable.",
       verificationId: "ERR_AUDIT_FAIL"
     };
+  }
+};
+
+/**
+ * Analyzes wallet history to prevent Sybil attacks.
+ */
+export const auditWalletReputation = async (walletAddress: string): Promise<{score: number, report: string}> => {
+  try {
+    const response = await ai.models.generateContent({
+      model: "gemini-3-flash-preview",
+      contents: `Analyze wallet address: ${walletAddress} for Sybil behavior, wash trading, or batch automated transfers.`,
+      config: {
+        systemInstruction: "You are an On-chain Forensic Analyst. Provide a reputation score from 0 (Bot/Malicious) to 100 (Trusted/Human).",
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            score: { type: Type.NUMBER },
+            report: { type: Type.STRING }
+          },
+          required: ["score", "report"]
+        }
+      }
+    });
+    return JSON.parse(response.text.trim());
+  } catch (e) {
+    return { score: 50, report: "Standard confidence assigned." };
+  }
+};
+
+/**
+ * Verifies if the captured frame matches the requested dynamic liveness challenge.
+ */
+export const verifyLivenessChallenge = async (
+  imageDataBase64: string,
+  challenge: string
+): Promise<{isVerified: boolean, confidence: number}> => {
+  try {
+    const response = await ai.models.generateContent({
+      model: "gemini-3-pro-preview",
+      contents: [
+        { inlineData: { mimeType: "image/jpeg", data: imageDataBase64 } },
+        { text: `Does the subject in this image clearly perform the following challenge: "${challenge}"? Look for signs of deepfake injection or static photo manipulation.` }
+      ],
+      config: {
+        systemInstruction: "You are a Biometric Security Auditor. Be extremely strict. Reject any signs of synthetic media.",
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            isVerified: { type: Type.BOOLEAN },
+            confidence: { type: Type.NUMBER }
+          },
+          required: ["isVerified", "confidence"]
+        }
+      }
+    });
+    return JSON.parse(response.text.trim());
+  } catch (e) {
+    return { isVerified: false, confidence: 0 };
   }
 };

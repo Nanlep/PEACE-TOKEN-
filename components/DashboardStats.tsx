@@ -2,6 +2,7 @@
 import React from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { TOKENOMICS } from '../constants';
+import { SystemHealth } from '../types';
 
 const data = [
   { name: '00:00', impact: 4000, treasury: 2400 },
@@ -23,6 +24,8 @@ interface DashboardStatsProps {
   treasury: number;
   totalRewarded: number;
   ptPrice: number;
+  rewardPoolPT: number;
+  health: SystemHealth;
 }
 
 const StatCard = ({ title, value, change, color, prefix = "" }: any) => (
@@ -40,18 +43,19 @@ const StatCard = ({ title, value, change, color, prefix = "" }: any) => (
   </div>
 );
 
-const DashboardStats: React.FC<DashboardStatsProps> = ({ treasury, totalRewarded, ptPrice }) => {
+const DashboardStats: React.FC<DashboardStatsProps> = ({ treasury, totalRewarded, ptPrice, rewardPoolPT, health }) => {
   const marketCap = TOKENOMICS.TOTAL_SUPPLY * ptPrice;
   const circulatingSupply = totalRewarded + (TOKENOMICS.TOTAL_SUPPLY * TOKENOMICS.ALLOCATION.SYSTEM); // Rewards + System base
-  const circulatingPercentage = (circulatingSupply / TOKENOMICS.TOTAL_SUPPLY) * 100;
+  const rewardPoolMax = TOKENOMICS.TOTAL_SUPPLY * TOKENOMICS.ALLOCATION.REWARDS;
+  const poolPercentage = (rewardPoolPT / rewardPoolMax) * 100;
 
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard title="MARKET CAP (LIVE)" value={`${marketCap.toLocaleString()}`} change="+0.02%" color="blue" prefix="$" />
         <StatCard title="PEACE PRICE" value={`${ptPrice.toFixed(4)}`} change={`${ptPrice > 0.19 ? '+' : ''}${((ptPrice - 0.19)/0.19*100).toFixed(2)}%`} color="emerald" prefix="$" />
-        <StatCard title="CIRCULATING SUPPLY" value={`${circulatingSupply.toLocaleString()}`} change={`${circulatingPercentage.toFixed(2)}% OF 1B`} color="blue" />
-        <StatCard title="DAO TREASURY" value={`${treasury.toLocaleString()}`} change="SOLVENT" color="amber" prefix="$" />
+        <StatCard title="REWARD POOL DEPTH" value={`${rewardPoolPT.toLocaleString()}`} change={`${poolPercentage.toFixed(1)}% LEFT`} color={health.rewardPoolStatus === 'NORMAL' ? 'blue' : health.rewardPoolStatus === 'LOW' ? 'amber' : 'rose'} />
+        <StatCard title="DAO TREASURY" value={`${treasury.toLocaleString()}`} change="SOLVENT" color="emerald" prefix="$" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

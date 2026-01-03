@@ -15,7 +15,8 @@ const NewProposalModal: React.FC<NewProposalModalProps> = ({ isOpen, onClose, on
     title: '',
     description: '',
     category: 'TREASURY' as DAOProposal['category'],
-    durationDays: 7
+    durationDays: 7,
+    targetAmount: 50000000
   });
 
   if (!isOpen) return null;
@@ -34,6 +35,7 @@ const NewProposalModal: React.FC<NewProposalModalProps> = ({ isOpen, onClose, on
       status: 'ACTIVE',
       votesFor: 0,
       votesAgainst: 0,
+      targetAmount: formData.category === 'TREASURY' ? formData.targetAmount : undefined,
       proposer: '0x..Self'
     });
     onClose();
@@ -73,18 +75,32 @@ const NewProposalModal: React.FC<NewProposalModalProps> = ({ isOpen, onClose, on
               />
             </div>
 
-            <div>
-              <label className="block text-[9px] font-black text-slate-500 mb-1 uppercase tracking-widest">Category</label>
-              <select 
-                disabled={!isEligible}
-                value={formData.category}
-                onChange={(e) => setFormData({...formData, category: e.target.value as any})}
-                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-blue-500 outline-none text-sm"
-              >
-                <option value="TREASURY">TREASURY (Grant/Disbursement)</option>
-                <option value="GOVERNANCE">GOVERNANCE (Rule Change)</option>
-                <option value="TECHNICAL">TECHNICAL (Upgrade/Bugfix)</option>
-              </select>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-[9px] font-black text-slate-500 mb-1 uppercase tracking-widest">Category</label>
+                <select 
+                  disabled={!isEligible}
+                  value={formData.category}
+                  onChange={(e) => setFormData({...formData, category: e.target.value as any})}
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-blue-500 outline-none text-sm"
+                >
+                  <option value="TREASURY">TREASURY (Refill/Grant)</option>
+                  <option value="GOVERNANCE">GOVERNANCE (Rule Change)</option>
+                  <option value="TECHNICAL">TECHNICAL (Upgrade/Bugfix)</option>
+                </select>
+              </div>
+              {formData.category === 'TREASURY' && (
+                <div>
+                  <label className="block text-[9px] font-black text-slate-500 mb-1 uppercase tracking-widest">Refill Amount (PT)</label>
+                  <input 
+                    type="number"
+                    disabled={!isEligible}
+                    value={formData.targetAmount}
+                    onChange={(e) => setFormData({...formData, targetAmount: parseInt(e.target.value)})}
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-blue-500 outline-none text-sm mono"
+                  />
+                </div>
+              )}
             </div>
 
             <div>
@@ -96,7 +112,7 @@ const NewProposalModal: React.FC<NewProposalModalProps> = ({ isOpen, onClose, on
                 value={formData.description}
                 onChange={(e) => setFormData({...formData, description: e.target.value})}
                 className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-blue-500 outline-none text-sm resize-none"
-                placeholder="Describe the problem and the proposed solution in detail..."
+                placeholder="Describe the problem and the proposed solution in detail. Include 'REFILL' for treasury re-allocation."
               />
             </div>
 

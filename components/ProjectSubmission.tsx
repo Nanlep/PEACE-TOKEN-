@@ -6,9 +6,10 @@ import { PeaceProject, IdentityTier } from '../types';
 interface ProjectSubmissionProps {
   onValidated: (project: PeaceProject) => void;
   userTier: IdentityTier;
+  poolHealth?: 'NORMAL' | 'LOW' | 'CRITICAL';
 }
 
-const ProjectSubmission: React.FC<ProjectSubmissionProps> = ({ onValidated, userTier }) => {
+const ProjectSubmission: React.FC<ProjectSubmissionProps> = ({ onValidated, userTier, poolHealth }) => {
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({ 
     title: '', 
@@ -83,9 +84,19 @@ const ProjectSubmission: React.FC<ProjectSubmissionProps> = ({ onValidated, user
 
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-lg font-bold text-white">Publish Impact Evidence</h2>
-        <div className="flex gap-2 text-[10px] font-bold text-blue-400 bg-blue-400/10 px-2 py-0.5 rounded border border-blue-400/20">
-           ORACLE DEEP-DIVE: READY
-        </div>
+        {poolHealth === 'CRITICAL' ? (
+          <div className="flex gap-2 text-[10px] font-black text-rose-400 bg-rose-400/10 px-2 py-0.5 rounded border border-rose-400/20 animate-pulse">
+             REWARD POOL DEPLETED: PENDING DAO REFILL
+          </div>
+        ) : poolHealth === 'LOW' ? (
+          <div className="flex gap-2 text-[10px] font-black text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded border border-amber-400/20">
+             REWARD POOL LOW: REFILL PROPOSAL RECOMMENDED
+          </div>
+        ) : (
+          <div className="flex gap-2 text-[10px] font-bold text-blue-400 bg-blue-400/10 px-2 py-0.5 rounded border border-blue-400/20">
+             ORACLE DEEP-DIVE: READY
+          </div>
+        )}
       </div>
       
       <form onSubmit={handleSubmit} className="space-y-4">
@@ -98,7 +109,7 @@ const ProjectSubmission: React.FC<ProjectSubmissionProps> = ({ onValidated, user
             className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-all text-sm placeholder:text-slate-700"
             placeholder="Regional Stability Initiative..."
             required
-            disabled={isTierGated}
+            disabled={isTierGated || poolHealth === 'CRITICAL'}
           />
         </div>
         <div>
@@ -110,7 +121,7 @@ const ProjectSubmission: React.FC<ProjectSubmissionProps> = ({ onValidated, user
             className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-all text-sm placeholder:text-slate-700 resize-none"
             placeholder="Describe outcome and reduction in conflict risk..."
             required
-            disabled={isTierGated}
+            disabled={isTierGated || poolHealth === 'CRITICAL'}
           />
         </div>
 
@@ -123,12 +134,12 @@ const ProjectSubmission: React.FC<ProjectSubmissionProps> = ({ onValidated, user
             className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-400 transition-all text-[11px] font-mono placeholder:text-slate-700 resize-none"
             placeholder="Links to PDF reports, image hashes, or signed attendance lists (one per line)..."
             required
-            disabled={isTierGated}
+            disabled={isTierGated || poolHealth === 'CRITICAL'}
           />
         </div>
 
         <button 
-          disabled={loading || isTierGated}
+          disabled={loading || isTierGated || poolHealth === 'CRITICAL'}
           className="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-slate-800 text-white font-black py-4 rounded-xl transition-all shadow-xl shadow-blue-900/30 flex items-center justify-center gap-3 active:scale-[0.98]"
         >
           {loading ? (
@@ -137,7 +148,7 @@ const ProjectSubmission: React.FC<ProjectSubmissionProps> = ({ onValidated, user
               <span className="text-[10px] tracking-[0.2em] uppercase">Deep Dive Audit in Progress...</span>
             </>
           ) : (
-            <span className="text-[10px] tracking-[0.2em] uppercase">Submit for Multi-Layer Verification</span>
+            <span className="text-[10px] tracking-[0.2em] uppercase">{poolHealth === 'CRITICAL' ? 'Submission Gated' : 'Submit for Multi-Layer Verification'}</span>
           )}
         </button>
       </form>

@@ -31,7 +31,7 @@ export interface InstitutionalRequest {
   entityName: string;
   credentialsHash: string;
   timestamp: number;
-  signatures: string[]; // List of Guardian IDs who signed
+  signatures: string[];
   status: 'PENDING' | 'APPROVED' | 'REJECTED';
 }
 
@@ -45,11 +45,12 @@ export interface DAOProposal {
   description: string;
   deadline: number;
   category: 'GOVERNANCE' | 'TREASURY' | 'TECHNICAL';
+  targetAmount?: number;
 }
 
 export interface TransactionLog {
   id: string;
-  type: 'MINT' | 'VOTE' | 'PAYOUT' | 'STAKE' | 'SLASH' | 'BRIDGE';
+  type: 'MINT' | 'VOTE' | 'PAYOUT' | 'STAKE' | 'SLASH' | 'BRIDGE' | 'RE_ALLOCATION';
   amount: number;
   currency: 'PT' | 'USDC';
   timestamp: number;
@@ -64,4 +65,11 @@ export interface SystemHealth {
   activeNodes: number;
   networkLoad: number;
   securityPosture: 'HIGH' | 'GUARDED' | 'ELEVATED' | 'CRITICAL';
+  rewardPoolStatus: 'NORMAL' | 'LOW' | 'CRITICAL';
+}
+
+export interface VerificationChallenge {
+  type: 'GESTURE' | 'PHRASE' | 'REPUTATION';
+  instruction: string;
+  challengeId: string;
 }
